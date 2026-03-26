@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import os
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Callable, Dict, List, NotRequired, TypedDict
@@ -11,6 +13,7 @@ from flask.typing import ResponseReturnValue
 from state import RuntimeState, load_queue, load_runtime_state, load_tags, save_queue, save_runtime_state, save_tags
 
 APP_ROOT = Path('/srv/music')
+ARCHIVE_ROOT = Path('/srv/music-archive')
 app = Flask(__name__)
 
 
@@ -41,6 +44,25 @@ def scan_library() -> List[Dict[str, str]]:
 
 def terminal_title(title: str) -> str:
     return title
+
+
+def _resolve_album_path(folder: str) -> Path:
+    album_path = (APP_ROOT / folder).resolve()
+    app_root = APP_ROOT.resolve()
+    if album_path == app_root or app_root not in album_path.parents:
+        raise ValueError(f'invalid album folder: {folder}')
+    return album_path
+
+
+def _album_export_data() -> List[Dict[str, str]]:
+    return [
+        {
+            'uuid': f"{album['artist']}-{album['album']}",
+            'album-name': album['album'],
+            'artist-name': album['artist'],
+        }
+        for album in scan_library()
+    ]
 
 
 def _run_mpc(command: list[str]) -> str:
@@ -159,6 +181,11 @@ def index():
     )
 
 
+@app.get('/control-panel')
+def control_panel_partial():
+    return _render_control_panel()
+
+
 @app.get('/current-queue')
 def current_queue_partial():
     current_track = _current_track()
@@ -196,6 +223,16 @@ def player_next():
     return _player_command(['mpc', 'next'], 'next track')
 
 
+@app.post('/player/volume-down')
+def player_volume_down():
+    return _player_command(['mpc', 'volume', '-5'], 'volume down')
+
+
+@app.post('/player/volume-up')
+def player_volume_up():
+    return _player_command(['mpc', 'volume', '+5'], 'volume up')
+
+
 @app.post('/library/play')
 def library_play():
     folder = request.form['folder']
@@ -216,6 +253,7 @@ def library_play():
             subprocess.run(['mpc', 'next'], check=True, capture_output=True, text=True)
             subprocess.run(['mpc', 'crossfade', '0'], check=True, capture_output=True, text=True)
         else:
+            subprocess.run(['mpc', 'clear'], check=True, capture_output=True, text=True)
             subprocess.run(['mpc', 'searchadd', 'filename', folder], check=True, capture_output=True, text=True)
             subprocess.run(['mpc', 'play'], check=True, capture_output=True, text=True)
 
@@ -264,6 +302,32 @@ def library_queue():
     return _redirect_to_index()
 
 
+@app.post('/library/archive')
+def library_archive():
+    folder = request.form['folder']
+    runtime = load_runtime_state()
+    try:
+        source = _resolve_album_path(folder)
+        destination = (ARCHIVE_ROOT / folder).resolve()
+        archive_root = ARCHIVE_ROOT.resolve()
+        if destination == archive_root or archive_root not in destination.parents:
+            raise ValueError(f'invalid archive destination for {folder}')
+        if destination.exists():
+            raise FileExistsError(f'{destination} already exists')
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(source), str(destination))
+
+        status = subprocess.run(['mpc', 'status'], check=True, capture_output=True, text=True)
+        if 'Updating DB' not in status.stdout:
+            subprocess.run(['mpc', 'update'], check=True, capture_output=True, text=True)
+
+        runtime['message'] = f'archived {folder}'
+    except (OSError, ValueError) as exc:
+        runtime['message'] = f'archive failed for {folder}: {exc}'
+    save_runtime_state(runtime)
+    return _redirect_to_index()
+
+
 @app.post('/queue/remove')
 def queue_remove():
     folder = request.form['folder']
@@ -274,6 +338,16 @@ def queue_remove():
     runtime['message'] = f'removed {folder} from queue'
     save_runtime_state(runtime)
     return redirect(url_for('index'))
+
+
+@app.get('/admin/export-albums')
+def admin_export_albums():
+    payload = json.dumps(_album_export_data(), indent=2)
+    return Response(
+        payload,
+        mimetype='application/json',
+        headers={'Content-Disposition': 'attachment; filename=albums-export.json'},
+    )
 
 
 @app.post('/mappings/edit')

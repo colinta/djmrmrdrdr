@@ -31,6 +31,11 @@
         <input type="hidden" name="q" value="{{ query }}">
         <button class="btn" type="submit">queue</button>
       </form>
+      <form method="post" action="{{ url_for('library_archive') }}">
+        <input type="hidden" name="folder" value="{{ album.folder }}">
+        <input type="hidden" name="q" value="{{ query }}">
+        <button class="btn" type="submit">archive</button>
+      </form>
     </div>
   </td>
 </tr>

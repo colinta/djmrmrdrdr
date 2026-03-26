@@ -8,4 +8,10 @@
   <form method="post" action="{{ url_for('player_next') }}" hx-post="{{ url_for('player_next') }}" hx-target="#control-panel-container" hx-swap="innerHTML">
     <button class="btn icon-btn" type="submit">▶︎▶︎</button>
   </form>
+  <form method="post" action="{{ url_for('player_volume_down') }}" hx-post="{{ url_for('player_volume_down') }}" hx-target="#control-panel-container" hx-swap="innerHTML">
+    <button class="btn icon-btn" type="submit">-</button>
+  </form>
+  <form method="post" action="{{ url_for('player_volume_up') }}" hx-post="{{ url_for('player_volume_up') }}" hx-target="#control-panel-container" hx-swap="innerHTML">
+    <button class="btn icon-btn" type="submit">+</button>
+  </form>
 </div>
