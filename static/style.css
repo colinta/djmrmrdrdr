@@ -34,17 +34,16 @@ a[href^="tel"] {
 
 .grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }
 
-.library-panel { grid-column: 1; }
-.sidebar-panels {
-  grid-column: 2;
-  display: flex;
-  flex-direction: column;
+.grid > * {
+  min-width: 0;
 }
+
+.library-panel { grid-column: auto; }
 
 .panel {
   position: relative;
@@ -100,6 +99,7 @@ a[href^="tel"] {
   margin-bottom: 12px;
 }
 
+.hero-now-playing,
 .hero-message { grid-column: 1 / -1; }
 .label { color: var(--muted); }
 .value { color: var(--name); }
@@ -198,22 +198,26 @@ th {
   margin: 0 0 10px;
   color: var(--name);
 }
-.queue-folder { color: var(--number); }
+.queue-folder,
+.queue-artist,
+.queue-album,
+.queue-track {
+  word-break: break-word;
+}
+.queue-folder,
+.queue-track { color: var(--number); }
+.queue-artist { color: var(--muted); }
+.queue-album { color: var(--name); }
+.queue-separator { color: var(--line); }
 .next-tag {
   display: inline-block;
-  margin-left: 8px;
+  margin: 0 8px 0 0;
   padding: 0 6px;
   color: var(--bg);
   background: var(--class);
 }
 
 @media (max-width: 1100px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-  .library-panel, .sidebar-panels {
-    grid-column: auto;
-  }
   .hero-grid {
     grid-template-columns: 1fr;
   }

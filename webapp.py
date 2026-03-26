@@ -21,8 +21,15 @@ class Track(TypedDict):
     display: NotRequired[str]
 
 
+class RuntimeState(TypedDict):
+    last_scanned_uid: str | None
+    last_unknown_uid: str | None
+    last_assignment: Dict[str, Any] | None
+    message: str
+
+
 class ControlPanelContext(TypedDict):
-    runtime: Dict[str, Any]
+    runtime: RuntimeState
     current_track: Track
     title: Callable[[str], str]
 

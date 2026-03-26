@@ -1,0 +1,21 @@
+<section class="panel current-queue-panel">
+  <div class="panel-title"><span>{{ title('current queue') }}</span></div>
+  <ol class="queue-list current-queue-list">
+    {% for item in current_queue %}
+      <li>
+        {% if item.position == current_track.position %}<span class="next-tag">playing</span>{% endif %}
+        {% if loop.previtem is defined and loop.previtem.artist == item.artist and loop.previtem.album == item.album %}
+          <span class="queue-track">{{ item.track }}</span>
+        {% else %}
+          <span class="queue-artist">{{ item.artist or 'unknown artist' }}</span>
+          <span class="queue-separator"> — </span>
+          <span class="queue-album">{{ item.album or 'unknown album' }}</span>
+          <span class="queue-separator"> — </span>
+          <span class="queue-track">{{ item.track or 'unknown track' }}</span>
+        {% endif %}
+      </li>
+    {% else %}
+      <li class="muted">queue empty</li>
+    {% endfor %}
+  </ol>
+</section>

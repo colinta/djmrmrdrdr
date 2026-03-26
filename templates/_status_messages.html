@@ -1,7 +1,4 @@
 <div class="hero-grid">
-  <div><span class="label">next_assignment</span> <span class="value">{{ next_assignment.folder if next_assignment else 'queue empty' }}</span></div>
-  <div><span class="label">last_scanned_uid</span> <span class="value">{{ runtime.last_scanned_uid or 'none' }}</span></div>
-  <div><span class="label">last_unknown_uid</span> <span class="value">{{ runtime.last_unknown_uid or 'none' }}</span></div>
-  <div><span class="label">last_assignment</span> <span class="value">{% if runtime.last_assignment %}{{ runtime.last_assignment.uid }} -> {{ runtime.last_assignment.folder }}{% else %}none{% endif %}</span></div>
+  <div class="hero-now-playing"><span class="label">currently playing</span> <span class="value">{{ current_track.display }}</span></div>
   <div class="hero-message"><span class="label">message</span> <span class="value accent">{{ runtime.message }}</span></div>
 </div>

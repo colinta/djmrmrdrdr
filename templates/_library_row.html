@@ -15,7 +15,13 @@
         <input type="hidden" name="q" value="{{ query }}">
         <button class="btn" type="submit">play</button>
       </form>
-      <form method="post" action="{{ url_for('assign_add') }}">
+      <form
+        method="post"
+        action="{{ url_for('assign_add') }}"
+        hx-post="{{ url_for('assign_add') }}"
+        hx-target="#assignment-queue-container"
+        hx-swap="innerHTML"
+      >
         <input type="hidden" name="folder" value="{{ album.folder }}">
         <input type="hidden" name="q" value="{{ query }}">
         <button class="btn" type="submit">assign</button>

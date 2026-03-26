@@ -17,18 +17,25 @@
     <main class="grid">
       {% include '_library.html' %}
 
-      <div class="sidebar-panels">
-        <div
-          id="assignment-queue-container"
-          hx-get="/assigment-queue"
-          hx-trigger="load, every 2s"
-          hx-swap="innerHTML"
-        >
-          {% include '_assignment_queue.html' %}
-        </div>
-
-        {% include '_tag_mappings.html' %}
+      <div
+        id="current-queue-container"
+        hx-get="/current-queue"
+        hx-trigger="load, every 2s"
+        hx-swap="innerHTML"
+      >
+        {% include '_current_queue.html' %}
       </div>
+
+      <div
+        id="assignment-queue-container"
+        hx-get="/assigment-queue"
+        hx-trigger="load, every 2s"
+        hx-swap="innerHTML"
+      >
+        {% include '_assignment_queue.html' %}
+      </div>
+
+      {% include '_tag_mappings.html' %}
     </main>
   </div>
 </body>
