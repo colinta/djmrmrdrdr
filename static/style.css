@@ -156,7 +156,14 @@ input[type="text"] {
 }
 
 .btn:hover { background: #333; }
-.btn.danger { color: var(--error); }
+.btn.danger {
+  color: var(--error);
+  border-color: var(--error);
+}
+
+.archive-btn[data-verify="1"] {
+  background: rgba(227, 113, 112, 0.18);
+}
 
 .action-buttons {
   display: flex;

@@ -339,6 +339,13 @@ def library_archive():
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(str(source), str(destination))
 
+        artist_dir = source.parent
+        try:
+            artist_dir.rmdir()
+            app.logger.info('removed empty artist directory %s', artist_dir)
+        except OSError:
+            pass
+
         status = subprocess.run(['mpc', 'status'], check=True, capture_output=True, text=True)
         if 'Updating DB' not in status.stdout:
             subprocess.run(['mpc', 'update'], check=True, capture_output=True, text=True)
