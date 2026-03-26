@@ -177,6 +177,17 @@ input[type="text"] {
   min-width: 0;
 }
 
+.admin-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-buttons .btn {
+  width: 100%;
+  text-align: center;
+}
+
 .action-buttons form {
   margin: 0;
 }

@@ -3,8 +3,10 @@
 
   <div class="admin-actions">
     <div class="admin-message"><span class="label">message</span> <span class="value accent">{{ runtime.message }}</span></div>
-    <button class="btn" type="button" onclick="window.location.reload()">reload</button>
-    <a class="btn" href="{{ url_for('admin_export_albums') }}" download>export albums</a>
+    <div class="admin-buttons">
+      <button class="btn" type="button" onclick="window.location.reload()">reload</button>
+      <a class="btn" href="{{ url_for('admin_export_albums') }}" download>export</a>
+    </div>
   </div>
 
   <div
