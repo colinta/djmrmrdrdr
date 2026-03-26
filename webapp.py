@@ -326,6 +326,7 @@ def library_archive():
     folder = request.form['folder']
     runtime = load_runtime_state()
     is_hx = request.headers.get('HX-Request') == 'true'
+    success = False
     app.logger.info('archive requested folder=%r hx=%s remote=%s', folder, is_hx, request.remote_addr)
     try:
         source = _resolve_album_path(folder)
@@ -351,13 +352,14 @@ def library_archive():
             subprocess.run(['mpc', 'update'], check=True, capture_output=True, text=True)
 
         runtime['message'] = f'archived {folder}'
+        success = True
         app.logger.info('archive succeeded folder=%r destination=%s', folder, destination)
     except (OSError, ValueError, subprocess.CalledProcessError) as exc:
         runtime['message'] = f'archive failed for {folder}: {exc}'
         app.logger.exception('archive failed folder=%r', folder)
     save_runtime_state(runtime)
-    if request.headers.get('HX-Request') == 'true':
-        return _render_library()
+    if is_hx:
+        return Response(status=204) if success else Response(runtime['message'], status=500)
     return _redirect_to_index()
 
 

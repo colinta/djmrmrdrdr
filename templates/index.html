@@ -130,10 +130,8 @@
         }
 
         event.preventDefault();
-        const libraryContainer = document.getElementById('library-container');
-        const scrollElement = libraryContainer ? libraryContainer.querySelector('.table-wrap') : null;
-        const scrollTop = scrollElement ? scrollElement.scrollTop : 0;
         const submitter = button;
+        const row = form.closest('tr');
 
         submitter.disabled = true;
         try {
@@ -144,13 +142,15 @@
               'HX-Request': 'true'
             }
           });
-          const html = await response.text();
-          if (libraryContainer) {
-            libraryContainer.innerHTML = html;
-            htmx.process(libraryContainer);
-            const newScrollElement = libraryContainer.querySelector('.table-wrap');
-            if (newScrollElement) {
-              newScrollElement.scrollTop = scrollTop;
+          if (!response.ok) {
+            throw new Error('archive request failed');
+          }
+
+          if (row) {
+            const tbody = row.parentElement;
+            row.remove();
+            if (tbody && !tbody.querySelector('tr')) {
+              tbody.innerHTML = '<tr><td colspan="4" class="muted library-empty">no albums found</td></tr>';
             }
           }
           htmx.trigger(document.body, 'refresh-control-panel');
