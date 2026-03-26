@@ -1,0 +1,30 @@
+<tr>
+  <td class="library-artist">{{ album.artist }}</td>
+  <td class="library-album">{{ album.album }}</td>
+  <td class="path library-folder">{{ album.folder }}</td>
+  <td class="library-actions">
+    <div class="action-buttons">
+      <form
+        method="post"
+        action="{{ url_for('library_play') }}"
+        hx-post="{{ url_for('library_play') }}"
+        hx-target="#control-panel-container"
+        hx-swap="innerHTML"
+      >
+        <input type="hidden" name="folder" value="{{ album.folder }}">
+        <input type="hidden" name="q" value="{{ query }}">
+        <button class="btn" type="submit">play</button>
+      </form>
+      <form method="post" action="{{ url_for('assign_add') }}">
+        <input type="hidden" name="folder" value="{{ album.folder }}">
+        <input type="hidden" name="q" value="{{ query }}">
+        <button class="btn" type="submit">assign</button>
+      </form>
+      <form method="post" action="{{ url_for('library_queue') }}">
+        <input type="hidden" name="folder" value="{{ album.folder }}">
+        <input type="hidden" name="q" value="{{ query }}">
+        <button class="btn" type="submit">queue</button>
+      </form>
+    </div>
+  </td>
+</tr>

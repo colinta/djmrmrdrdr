@@ -1,0 +1,17 @@
+<section class="panel queue-panel">
+  <div class="panel-title"><span>{{ title('assignment queue') }}</span></div>
+  <ol class="queue-list">
+    {% for item in queue %}
+      <li>
+        <span class="queue-folder">{{ item.folder }}</span>
+        {% if loop.first %}<span class="next-tag">next</span>{% endif %}
+        <form method="post" action="{{ url_for('queue_remove') }}">
+          <input type="hidden" name="folder" value="{{ item.folder }}">
+          <button class="btn danger" type="submit">remove</button>
+        </form>
+      </li>
+    {% else %}
+      <li class="muted">queue empty</li>
+    {% endfor %}
+  </ol>
+</section>

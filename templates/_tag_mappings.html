@@ -1,0 +1,22 @@
+<section class="panel mappings-panel">
+  <div class="panel-title"><span>{{ title('tag mappings') }}</span></div>
+  <div class="table-wrap short">
+    <table class="mappings-table">
+      <thead>
+        <tr>
+          <th class="mapping-uid">uid</th>
+          <th class="mapping-folder">folder</th>
+          <th class="mapping-save">save</th>
+          <th class="mapping-delete">delete</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for mapping in mappings %}
+        {% include '_tag_mapping_row.html' %}
+      {% else %}
+        <tr><td colspan="4" class="muted">no mappings</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>

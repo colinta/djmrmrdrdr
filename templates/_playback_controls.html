@@ -1,0 +1,11 @@
+<div class="player-controls">
+  <form method="post" action="{{ url_for('player_prev') }}" hx-post="{{ url_for('player_prev') }}" hx-target="#control-panel-container" hx-swap="innerHTML">
+    <button class="btn icon-btn" type="submit">◀︎◀︎</button>
+  </form>
+  <form method="post" action="{{ url_for('player_toggle_pause') }}" hx-post="{{ url_for('player_toggle_pause') }}" hx-target="#control-panel-container" hx-swap="innerHTML">
+    <button class="btn icon-btn" type="submit">▷/||</button>
+  </form>
+  <form method="post" action="{{ url_for('player_next') }}" hx-post="{{ url_for('player_next') }}" hx-target="#control-panel-container" hx-swap="innerHTML">
+    <button class="btn icon-btn" type="submit">▶︎▶︎</button>
+  </form>
+</div>

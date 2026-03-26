@@ -1,0 +1,19 @@
+{% set mapping_form_id = 'mapping-form-' ~ mapping.uid %}
+<tr>
+  <td class="path mapping-uid">{{ mapping.uid }}</td>
+  <td class="mapping-folder">
+    <form class="mapping-form" id="{{ mapping_form_id }}" method="post" action="{{ url_for('mapping_edit') }}">
+      <input type="hidden" name="uid" value="{{ mapping.uid }}">
+      <input type="text" name="folder" value="{{ mapping.folder }}">
+    </form>
+  </td>
+  <td class="mapping-save">
+    <button class="btn" type="submit" form="{{ mapping_form_id }}">save</button>
+  </td>
+  <td class="mapping-delete">
+    <form method="post" action="{{ url_for('mapping_delete') }}">
+      <input type="hidden" name="uid" value="{{ mapping.uid }}">
+      <button class="btn danger" type="submit">delete</button>
+    </form>
+  </td>
+</tr>

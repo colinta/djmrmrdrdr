@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="format-detection" content="telephone=no">
+  <title>musicplayer ui</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body>
+  <div class="screen">
+    <div id="control-panel-container">
+      {% include '_control_panel.html' %}
+    </div>
+
+    <main class="grid">
+      {% include '_library.html' %}
+
+      <div class="sidebar-panels">
+        <div
+          id="assignment-queue-container"
+          hx-get="/assigment-queue"
+          hx-trigger="load, every 2s"
+          hx-swap="innerHTML"
+        >
+          {% include '_assignment_queue.html' %}
+        </div>
+
+        {% include '_tag_mappings.html' %}
+      </div>
+    </main>
+  </div>
+</body>
+</html>
