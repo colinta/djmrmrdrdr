@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, List, NotRequired, TypedDict
+from typing import Any, Callable, Dict, List, NotRequired, TypedDict
 
 from flask import Flask, redirect, render_template, request, url_for
 
@@ -19,6 +19,12 @@ class Track(TypedDict):
     track: str
     position: NotRequired[int | None]
     display: NotRequired[str]
+
+
+class ControlPanelContext(TypedDict):
+    runtime: Dict[str, Any]
+    current_track: Track
+    title: Callable[[str], str]
 
 
 def scan_library() -> List[Dict[str, str]]:
@@ -96,7 +102,7 @@ def _current_queue(current_track: Track | None = None) -> List[Track]:
     return queue
 
 
-def _control_panel_context() -> Dict[str, Any]:
+def _control_panel_context() -> ControlPanelContext:
     runtime = load_runtime_state()
     return {
         'runtime': runtime,
