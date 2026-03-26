@@ -1,0 +1,19 @@
+<aside id="admin-panel" class="panel admin-panel" hidden>
+  <div class="panel-title"><span>{{ title('admin panel') }}</span></div>
+
+  <div class="admin-actions">
+    <div class="admin-message"><span class="label">message</span> <span class="value accent">{{ runtime.message }}</span></div>
+    <a class="btn" href="{{ url_for('admin_export_albums') }}" download>export albums</a>
+  </div>
+
+  <div
+    id="assignment-queue-container"
+    hx-get="/assigment-queue"
+    hx-trigger="load, every 10s"
+    hx-swap="innerHTML"
+  >
+    {% include '_assignment_queue.html' %}
+  </div>
+
+  {% include '_tag_mappings.html' %}
+</aside>

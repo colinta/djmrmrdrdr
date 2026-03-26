@@ -27,9 +27,19 @@ a[href^="tel"] {
 }
 
 .screen {
+  position: relative;
   max-width: 1600px;
   margin: 0 auto;
   padding: 16px;
+}
+
+.topbar {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 20;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .grid {
@@ -52,6 +62,17 @@ a[href^="tel"] {
   border: 3px double var(--border);
   padding: 22px 14px 14px;
   box-shadow: inset 0 0 0 1px rgba(65, 112, 111, 0.35);
+}
+
+.panel.admin-panel {
+  margin-bottom: 16px;
+  border: 3px double var(--error);
+  box-shadow: inset 0 0 0 1px rgba(227, 113, 112, 0.35);
+}
+
+.panel.admin-panel > .panel-title span::before,
+.panel.admin-panel > .panel-title span::after {
+  border-top-color: var(--error);
 }
 
 .panel-title {
@@ -143,6 +164,18 @@ input[type="text"] {
   align-items: center;
 }
 
+.admin-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-message {
+  flex: 1;
+  min-width: 0;
+}
+
 .action-buttons form {
   margin: 0;
 }
@@ -193,6 +226,9 @@ th {
 .queue-list {
   margin: 0;
   padding-left: 22px;
+}
+.current-queue-list {
+  padding-left: 28px;
 }
 .queue-list li {
   margin: 0 0 10px;

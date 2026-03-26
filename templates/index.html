@@ -10,9 +10,20 @@
 </head>
 <body>
   <div class="screen">
-    <div id="control-panel-container">
+    <div class="topbar">
+      <button id="admin-toggle" class="btn" type="button" aria-expanded="false" aria-controls="admin-panel">admin</button>
+    </div>
+
+    <div
+      id="control-panel-container"
+      hx-get="/control-panel"
+      hx-trigger="refresh-control-panel from:body"
+      hx-swap="innerHTML"
+    >
       {% include '_control_panel.html' %}
     </div>
+
+    {% include '_admin_panel.html' %}
 
     <main class="grid">
       {% include '_library.html' %}
@@ -20,23 +31,62 @@
       <div
         id="current-queue-container"
         hx-get="/current-queue"
-        hx-trigger="load, every 2s"
+        hx-trigger="load, every 5s"
         hx-swap="innerHTML"
       >
         {% include '_current_queue.html' %}
       </div>
-
-      <div
-        id="assignment-queue-container"
-        hx-get="/assigment-queue"
-        hx-trigger="load, every 2s"
-        hx-swap="innerHTML"
-      >
-        {% include '_assignment_queue.html' %}
-      </div>
-
-      {% include '_tag_mappings.html' %}
     </main>
   </div>
+  <script>
+    (() => {
+      const delayMs = 5000;
+      const container = document.getElementById('control-panel-container');
+      const adminToggle = document.getElementById('admin-toggle');
+      const adminPanel = document.getElementById('admin-panel');
+      if (!container) return;
+
+      let refreshTimer = null;
+
+      const scheduleRefresh = () => {
+        clearTimeout(refreshTimer);
+        refreshTimer = window.setTimeout(() => {
+          htmx.trigger(document.body, 'refresh-control-panel');
+        }, delayMs);
+      };
+
+      scheduleRefresh();
+
+      document.body.addEventListener('htmx:afterRequest', (event) => {
+        if (event.detail.elt === container) {
+          scheduleRefresh();
+        }
+      });
+
+      document.body.addEventListener('htmx:responseError', (event) => {
+        if (event.detail.elt === container) {
+          scheduleRefresh();
+        }
+      });
+
+      document.body.addEventListener('htmx:sendError', (event) => {
+        if (event.detail.elt === container) {
+          scheduleRefresh();
+        }
+      });
+
+      if (adminToggle && adminPanel) {
+        adminToggle.addEventListener('click', () => {
+          const isHidden = adminPanel.hasAttribute('hidden');
+          if (isHidden) {
+            adminPanel.removeAttribute('hidden');
+          } else {
+            adminPanel.setAttribute('hidden', '');
+          }
+          adminToggle.setAttribute('aria-expanded', String(isHidden));
+        });
+      }
+    })();
+  </script>
 </body>
 </html>
