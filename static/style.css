@@ -169,6 +169,7 @@ input[type="text"] {
   align-items: center;
   gap: 12px;
   margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 
 .admin-message {
