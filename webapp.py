@@ -3,11 +3,12 @@ from __future__ import annotations
 import os
 import subprocess
 from pathlib import Path
-from typing import Any, Callable, Dict, List, NotRequired, TypedDict
+from typing import Callable, Dict, List, NotRequired, TypedDict
 
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, Response, redirect, render_template, request, url_for
+from flask.typing import ResponseReturnValue
 
-from state import load_queue, load_runtime_state, load_tags, save_queue, save_runtime_state, save_tags
+from state import RuntimeState, load_queue, load_runtime_state, load_tags, save_queue, save_runtime_state, save_tags
 
 APP_ROOT = Path('/srv/music')
 app = Flask(__name__)
@@ -19,13 +20,6 @@ class Track(TypedDict):
     track: str
     position: NotRequired[int | None]
     display: NotRequired[str]
-
-
-class RuntimeState(TypedDict):
-    last_scanned_uid: str | None
-    last_unknown_uid: str | None
-    last_assignment: Dict[str, Any] | None
-    message: str
 
 
 class ControlPanelContext(TypedDict):
@@ -122,11 +116,11 @@ def _render_control_panel() -> str:
     return render_template('_control_panel.html', **_control_panel_context())
 
 
-def _redirect_to_index() -> Any:
+def _redirect_to_index() -> Response:
     return redirect(url_for('index', q=request.form.get('q', '')))
 
 
-def _player_command(command: list[str], success_message: str) -> Any:
+def _player_command(command: list[str], success_message: str) -> ResponseReturnValue:
     runtime = load_runtime_state()
     try:
         subprocess.run(command, check=True, capture_output=True, text=True)

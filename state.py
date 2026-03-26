@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import NotRequired, TypeVar, TypedDict
 
 import yaml
 
@@ -9,8 +9,42 @@ TAGS_PATH = Path("/etc/musicplayer/tags.yaml")
 QUEUE_PATH = Path("/etc/musicplayer/assignment_queue.yaml")
 RUNTIME_STATE_PATH = Path("/opt/musicplayer/runtime/state.yaml")
 
+T = TypeVar("T")
 
-def _load_yaml(path: Path, default: Any) -> Any:
+
+class TagMapping(TypedDict):
+    action: str
+    folder: NotRequired[str]
+    playlist: NotRequired[str]
+    shuffle: NotRequired[bool]
+
+
+class TagsState(TypedDict):
+    tags: dict[str, TagMapping]
+
+
+class QueueItem(TypedDict):
+    action: str
+    folder: str
+
+
+class QueueState(TypedDict):
+    assignment_mode: bool
+    queue: list[QueueItem]
+
+
+class LastAssignment(QueueItem):
+    uid: str
+
+
+class RuntimeState(TypedDict):
+    last_scanned_uid: str | None
+    last_unknown_uid: str | None
+    last_assignment: LastAssignment | None
+    message: str
+
+
+def _load_yaml(path: Path, default: T) -> T:
     if not path.exists():
         return default
     with path.open() as f:
@@ -18,37 +52,37 @@ def _load_yaml(path: Path, default: Any) -> Any:
     return default if data is None else data
 
 
-def _save_yaml(path: Path, data: Any) -> None:
+def _save_yaml(path: Path, data: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w") as f:
         yaml.safe_dump(data, f, sort_keys=False)
 
 
-def load_tags() -> Dict[str, Any]:
+def load_tags() -> TagsState:
     data = _load_yaml(TAGS_PATH, {"tags": {}})
     data.setdefault("tags", {})
     return data
 
 
-def save_tags(data: Dict[str, Any]) -> None:
+def save_tags(data: TagsState) -> None:
     data.setdefault("tags", {})
     _save_yaml(TAGS_PATH, data)
 
 
-def load_queue() -> Dict[str, List[Dict[str, Any]]]:
+def load_queue() -> QueueState:
     data = _load_yaml(QUEUE_PATH, {"assignment_mode": False, "queue": []})
     data.setdefault("assignment_mode", False)
     data.setdefault("queue", [])
     return data
 
 
-def save_queue(data: Dict[str, Any]) -> None:
+def save_queue(data: QueueState) -> None:
     data.setdefault("assignment_mode", False)
     data.setdefault("queue", [])
     _save_yaml(QUEUE_PATH, data)
 
 
-def load_runtime_state() -> Dict[str, Any]:
+def load_runtime_state() -> RuntimeState:
     data = _load_yaml(
         RUNTIME_STATE_PATH,
         {
@@ -65,5 +99,5 @@ def load_runtime_state() -> Dict[str, Any]:
     return data
 
 
-def save_runtime_state(data: Dict[str, Any]) -> None:
+def save_runtime_state(data: RuntimeState) -> None:
     _save_yaml(RUNTIME_STATE_PATH, data)

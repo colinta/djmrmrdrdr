@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import signal
 from pathlib import Path
-from typing import Any, Dict
 
 from buttons import Buttons
 from nfc_reader import NFCReader
 from player import MusicPlayer
-from state import load_queue, load_runtime_state, load_tags, save_queue, save_runtime_state, save_tags
+from state import TagsState, load_queue, load_runtime_state, load_tags, save_queue, save_runtime_state, save_tags
 
 CONFIG_PATH = Path("/etc/musicplayer/tags.yaml")
 
@@ -27,7 +26,7 @@ class Controller:
         )
         self._running = True
 
-    def _load_config(self) -> Dict[str, Any]:
+    def _load_config(self) -> TagsState:
         return load_tags()
 
     def start(self) -> None:
