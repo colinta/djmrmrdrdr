@@ -20,7 +20,9 @@ class Controller:
         self.config = self._load_config()
         self.active_tag_uid: str | None = None
         self.paused_by_tag_removal = False
-        self.nfc_reader = NFCReader(callback=self.on_tag, on_removed=self.on_tag_removed)
+        # Temporarily disable tag-removal pause/resume behavior during testing.
+        # To restore it later, pass on_removed=self.on_tag_removed again.
+        self.nfc_reader = NFCReader(callback=self.on_tag)
         self.buttons = Buttons(
             on_toggle_pause=self.on_toggle_pause,
             on_next_track=self.on_next_track,
