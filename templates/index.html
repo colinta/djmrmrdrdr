@@ -26,7 +26,14 @@
     {% include '_admin_panel.html' %}
 
     <main class="grid">
-      {% include '_library.html' %}
+      <div
+        id="library-container"
+        hx-get="/library"
+        hx-trigger="refresh-library from:body"
+        hx-swap="innerHTML"
+      >
+        {% include '_library.html' %}
+      </div>
 
       <div
         id="current-queue-container"

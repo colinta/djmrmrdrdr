@@ -6,7 +6,6 @@
         <tr>
           <th class="mapping-uid">uid</th>
           <th class="mapping-folder">folder</th>
-          <th class="mapping-save">save</th>
           <th class="mapping-delete">delete</th>
         </tr>
       </thead>
@@ -14,7 +13,7 @@
       {% for mapping in mappings %}
         {% include '_tag_mapping_row.html' %}
       {% else %}
-        <tr><td colspan="4" class="muted">no mappings</td></tr>
+        <tr><td colspan="3" class="muted">no mappings</td></tr>
       {% endfor %}
       </tbody>
     </table>

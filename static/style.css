@@ -189,6 +189,10 @@ input[type="text"] {
   width: 100%;
 }
 
+.mapping-form input[readonly] {
+  cursor: default;
+}
+
 .library-table .library-artist,
 .library-table .library-album,
 .library-table .library-folder,
@@ -338,7 +342,7 @@ th {
     grid-template-areas:
       "uid uid"
       "folder folder"
-      "save delete";
+      "delete delete";
     gap: 6px 8px;
     padding: 10px 0;
     border-bottom: 1px solid rgba(65, 112, 111, 0.35);
@@ -358,20 +362,14 @@ th {
     min-width: 0;
   }
 
-  .mappings-table .mapping-save {
-    grid-area: save;
-  }
-
   .mappings-table .mapping-delete {
     grid-area: delete;
   }
 
-  .mappings-table .mapping-save,
   .mappings-table .mapping-delete {
     margin-top: 2px;
   }
 
-  .mappings-table .mapping-save .btn,
   .mappings-table .mapping-delete .btn {
     width: 100%;
   }

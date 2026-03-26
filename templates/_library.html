@@ -1,6 +1,13 @@
 <section class="panel library-panel">
   <div class="panel-title"><span>{{ title('library') }}</span></div>
-  <form class="search-bar" method="get" action="{{ url_for('index') }}">
+  <form
+    class="search-bar"
+    method="get"
+    action="{{ url_for('index') }}"
+    hx-get="{{ url_for('library_partial') }}"
+    hx-target="#library-container"
+    hx-swap="innerHTML"
+  >
     <input type="text" name="q" value="{{ query }}" placeholder="search artist / album / folder" autofocus>
     <button class="btn" type="submit">search</button>
   </form>

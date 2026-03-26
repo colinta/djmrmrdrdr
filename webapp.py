@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import shutil
 import subprocess
@@ -15,6 +16,7 @@ from state import RuntimeState, load_queue, load_runtime_state, load_tags, save_
 APP_ROOT = Path('/srv/music')
 ARCHIVE_ROOT = Path('/srv/music-archive')
 app = Flask(__name__)
+app.logger.setLevel(logging.INFO)
 
 
 class Track(TypedDict):
@@ -134,8 +136,24 @@ def _control_panel_context() -> ControlPanelContext:
     }
 
 
+def _library_context() -> Dict[str, object]:
+    search = request.values.get('q', '').strip().lower()
+    albums = scan_library()
+    if search:
+        albums = [a for a in albums if search in a['artist'].lower() or search in a['album'].lower() or search in a['folder'].lower()]
+    return {
+        'albums': albums,
+        'query': request.values.get('q', ''),
+        'title': terminal_title,
+    }
+
+
 def _render_control_panel() -> str:
     return render_template('_control_panel.html', **_control_panel_context())
+
+
+def _render_library() -> str:
+    return render_template('_library.html', **_library_context())
 
 
 def _redirect_to_index() -> Response:
@@ -159,10 +177,6 @@ def _player_command(command: list[str], success_message: str) -> ResponseReturnV
 
 @app.route('/')
 def index():
-    search = request.args.get('q', '').strip().lower()
-    albums = scan_library()
-    if search:
-        albums = [a for a in albums if search in a['artist'].lower() or search in a['album'].lower() or search in a['folder'].lower()]
     queue_state = load_queue()
     control_panel = _control_panel_context()
     current_track = _current_track()
@@ -170,20 +184,23 @@ def index():
     mappings = [{"uid": uid, **cfg} for uid, cfg in sorted(tags.items(), key=lambda item: item[1].get('folder', ''))]
     return render_template(
         'index.html',
-        albums=albums,
         current_queue=_current_queue(current_track),
         current_track=current_track,
         queue=queue_state.get('queue', []),
         runtime=control_panel['runtime'],
         mappings=mappings,
-        query=request.args.get('q', ''),
-        title=terminal_title,
+        **_library_context(),
     )
 
 
 @app.get('/control-panel')
 def control_panel_partial():
     return _render_control_panel()
+
+
+@app.get('/library')
+def library_partial():
+    return _render_library()
 
 
 @app.get('/current-queue')
@@ -299,6 +316,8 @@ def library_queue():
         error = exc.stderr.strip() or exc.stdout.strip() or str(exc)
         runtime['message'] = f'queue failed for {folder}: {error}'
     save_runtime_state(runtime)
+    if request.headers.get('HX-Request') == 'true':
+        return current_queue_partial()
     return _redirect_to_index()
 
 
@@ -306,10 +325,13 @@ def library_queue():
 def library_archive():
     folder = request.form['folder']
     runtime = load_runtime_state()
+    is_hx = request.headers.get('HX-Request') == 'true'
+    app.logger.info('archive requested folder=%r hx=%s remote=%s', folder, is_hx, request.remote_addr)
     try:
         source = _resolve_album_path(folder)
         destination = (ARCHIVE_ROOT / folder).resolve()
         archive_root = ARCHIVE_ROOT.resolve()
+        app.logger.info('archive paths source=%s destination=%s', source, destination)
         if destination == archive_root or archive_root not in destination.parents:
             raise ValueError(f'invalid archive destination for {folder}')
         if destination.exists():
@@ -322,9 +344,13 @@ def library_archive():
             subprocess.run(['mpc', 'update'], check=True, capture_output=True, text=True)
 
         runtime['message'] = f'archived {folder}'
-    except (OSError, ValueError) as exc:
+        app.logger.info('archive succeeded folder=%r destination=%s', folder, destination)
+    except (OSError, ValueError, subprocess.CalledProcessError) as exc:
         runtime['message'] = f'archive failed for {folder}: {exc}'
+        app.logger.exception('archive failed folder=%r', folder)
     save_runtime_state(runtime)
+    if request.headers.get('HX-Request') == 'true':
+        return _render_library()
     return _redirect_to_index()
 
 

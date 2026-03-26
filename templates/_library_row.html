@@ -26,12 +26,24 @@
         <input type="hidden" name="q" value="{{ query }}">
         <button class="btn" type="submit">assign</button>
       </form>
-      <form method="post" action="{{ url_for('library_queue') }}">
+      <form
+        method="post"
+        action="{{ url_for('library_queue') }}"
+        hx-post="{{ url_for('library_queue') }}"
+        hx-target="#current-queue-container"
+        hx-swap="innerHTML"
+      >
         <input type="hidden" name="folder" value="{{ album.folder }}">
         <input type="hidden" name="q" value="{{ query }}">
         <button class="btn" type="submit">queue</button>
       </form>
-      <form method="post" action="{{ url_for('library_archive') }}">
+      <form
+        method="post"
+        action="{{ url_for('library_archive') }}"
+        hx-post="{{ url_for('library_archive') }}"
+        hx-target="#library-container"
+        hx-swap="innerHTML"
+      >
         <input type="hidden" name="folder" value="{{ album.folder }}">
         <input type="hidden" name="q" value="{{ query }}">
         <button class="btn" type="submit">archive</button>
