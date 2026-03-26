@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, NotRequired, TypedDict
 
 from flask import Flask, redirect, render_template, request, url_for
 
@@ -11,6 +11,14 @@ from state import load_queue, load_runtime_state, load_tags, save_queue, save_ru
 
 APP_ROOT = Path('/srv/music')
 app = Flask(__name__)
+
+
+class Track(TypedDict):
+    artist: str
+    album: str
+    track: str
+    position: NotRequired[int | None]
+    display: NotRequired[str]
 
 
 def scan_library() -> List[Dict[str, str]]:
@@ -28,13 +36,71 @@ def terminal_title(title: str) -> str:
     return title
 
 
+def _run_mpc(command: list[str]) -> str:
+    try:
+        result = subprocess.run(command, check=True, capture_output=True, text=True)
+        return result.stdout.strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return ''
+
+
+def _parse_track_line(line: str, include_position: bool = False) -> Track:
+    parts = [part.strip() for part in line.split('\t')]
+    if include_position:
+        parts += [''] * max(0, 4 - len(parts))
+        position, artist, album, track = parts[:4]
+        return {
+            'position': int(position) if position.isdigit() else None,
+            'artist': artist,
+            'album': album,
+            'track': track,
+        }
+    parts += [''] * max(0, 3 - len(parts))
+    artist, album, track = parts[:3]
+    return {
+        'artist': artist,
+        'album': album,
+        'track': track,
+    }
+
+
+def _current_track() -> Track:
+    line = _run_mpc(['mpc', 'current', '-f', '%position%\t%artist%\t%album%\t%title%'])
+    state = (_run_mpc(['mpc', 'status', '%state%']) or '').splitlines()
+    player_state = state[-1].strip().lower() if state else ''
+    if not line or player_state == 'stopped':
+        return {'position': None, 'artist': '', 'album': '', 'track': '', 'display': 'nothing playing'}
+
+    track = _parse_track_line(line, include_position=True)
+    parts = [value for value in [track['artist'], track['album'], track['track']] if value]
+    display = ' — '.join(parts) if parts else 'unknown track'
+    if player_state == 'paused':
+        display = f'{display} [paused]'
+    track['display'] = display
+    return track
+
+
+def _current_queue(current_track: Track | None = None) -> List[Track]:
+    output = _run_mpc(['mpc', 'playlist', '-f', '%position%\t%artist%\t%album%\t%title%'])
+    if not output:
+        return []
+
+    queue = [_parse_track_line(line, include_position=True) for line in output.splitlines() if line.strip()]
+    if not current_track or current_track.get('position') is None:
+        return queue
+
+    current_position = current_track['position']
+    if any(item.get('position') == current_position for item in queue):
+        return [item for item in queue if item.get('position') is not None and item['position'] >= current_position]
+
+    return queue
+
+
 def _control_panel_context() -> Dict[str, Any]:
-    queue_state = load_queue()
     runtime = load_runtime_state()
-    next_assignment = queue_state.get('queue', [])[0] if queue_state.get('queue') else None
     return {
         'runtime': runtime,
-        'next_assignment': next_assignment,
+        'current_track': _current_track(),
         'title': terminal_title,
     }
 
@@ -70,16 +136,29 @@ def index():
         albums = [a for a in albums if search in a['artist'].lower() or search in a['album'].lower() or search in a['folder'].lower()]
     queue_state = load_queue()
     control_panel = _control_panel_context()
+    current_track = _current_track()
     tags = load_tags().get('tags', {})
     mappings = [{"uid": uid, **cfg} for uid, cfg in sorted(tags.items(), key=lambda item: item[1].get('folder', ''))]
     return render_template(
         'index.html',
         albums=albums,
+        current_queue=_current_queue(current_track),
+        current_track=current_track,
         queue=queue_state.get('queue', []),
         runtime=control_panel['runtime'],
         mappings=mappings,
-        next_assignment=control_panel['next_assignment'],
         query=request.args.get('q', ''),
+        title=terminal_title,
+    )
+
+
+@app.get('/current-queue')
+def current_queue_partial():
+    current_track = _current_track()
+    return render_template(
+        '_current_queue.html',
+        current_queue=_current_queue(current_track),
+        current_track=current_track,
         title=terminal_title,
     )
 
@@ -159,6 +238,8 @@ def assign_add():
     runtime = load_runtime_state()
     runtime['message'] = message
     save_runtime_state(runtime)
+    if request.headers.get('HX-Request') == 'true':
+        return assignment_queue_partial()
     return _redirect_to_index()
 
 
