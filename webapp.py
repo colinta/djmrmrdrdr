@@ -377,11 +377,11 @@ def queue_remove():
 
 @app.get('/admin/export-albums')
 def admin_export_albums():
-    payload = json.dumps(_album_export_data(), indent=2)
+    payload = '\n'.join(json.dumps(album) for album in _album_export_data()) + '\n'
     return Response(
         payload,
-        mimetype='application/json',
-        headers={'Content-Disposition': 'attachment; filename=albums-export.json'},
+        mimetype='application/x-ndjson',
+        headers={'Content-Disposition': 'attachment; filename=albums-export.jsonl'},
     )
 
 
