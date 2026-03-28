@@ -1,4 +1,4 @@
-<tr>
+<tr data-search-terms="{{ album.search_terms }}"{% if album.is_favourite %} data-favourite="1"{% endif %}>
   <td class="library-artist">{{ album.artist }}</td>
   <td class="library-album">{{ album.album }}</td>
   <td class="path library-folder">{{ album.folder }}</td>
@@ -12,7 +12,6 @@
         hx-swap="innerHTML"
       >
         <input type="hidden" name="folder" value="{{ album.folder }}">
-        <input type="hidden" name="q" value="{{ query }}">
         <button class="btn" type="submit">play</button>
       </form>
       <form
@@ -23,7 +22,6 @@
         hx-swap="innerHTML"
       >
         <input type="hidden" name="folder" value="{{ album.folder }}">
-        <input type="hidden" name="q" value="{{ query }}">
         <button class="btn" type="submit">assign</button>
       </form>
       <form
@@ -34,7 +32,6 @@
         hx-swap="innerHTML"
       >
         <input type="hidden" name="folder" value="{{ album.folder }}">
-        <input type="hidden" name="q" value="{{ query }}">
         <button class="btn" type="submit">queue</button>
       </form>
       <form
@@ -43,7 +40,6 @@
         action="{{ url_for('library_archive') }}"
       >
         <input type="hidden" name="folder" value="{{ album.folder }}">
-        <input type="hidden" name="q" value="{{ query }}">
         <button class="btn danger archive-btn" type="submit" data-verify="" title="archive">archive</button>
       </form>
     </div>

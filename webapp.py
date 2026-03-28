@@ -136,14 +136,37 @@ def _control_panel_context() -> ControlPanelContext:
     }
 
 
+def _search_terms(*parts: str) -> str:
+    words: List[str] = []
+    for part in parts:
+        words.extend(piece for piece in part.lower().split() if piece)
+    return ' '.join(words)
+
+
+
 def _library_context() -> Dict[str, object]:
-    search = request.values.get('q', '').strip().lower()
-    albums = scan_library()
-    if search:
-        albums = [a for a in albums if search in a['artist'].lower() or search in a['album'].lower() or search in a['folder'].lower()]
+    queue_folders = {
+        item.get('folder', '')
+        for item in load_queue().get('queue', [])
+        if item.get('folder')
+    }
+    mapped_folders = {
+        config.get('folder', '')
+        for config in load_tags().get('tags', {}).values()
+        if config.get('folder')
+    }
+    favourite_folders = queue_folders | mapped_folders
+
+    albums = [
+        {
+            **album,
+            'search_terms': _search_terms(album['artist'], album['album']),
+            'is_favourite': album['folder'] in favourite_folders,
+        }
+        for album in scan_library()
+    ]
     return {
         'albums': albums,
-        'query': request.values.get('q', ''),
         'title': terminal_title,
     }
 
@@ -157,7 +180,7 @@ def _render_library() -> str:
 
 
 def _redirect_to_index() -> Response:
-    return redirect(url_for('index', q=request.form.get('q', '')))
+    return redirect(url_for('index'))
 
 
 def _player_command(command: list[str], success_message: str) -> ResponseReturnValue:

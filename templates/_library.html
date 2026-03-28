@@ -1,16 +1,10 @@
 <section class="panel library-panel">
   <div class="panel-title"><span>{{ title('library') }}</span></div>
-  <form
-    class="search-bar"
-    method="get"
-    action="{{ url_for('index') }}"
-    hx-get="{{ url_for('library_partial') }}"
-    hx-target="#library-container"
-    hx-swap="innerHTML"
-  >
-    <input type="text" name="q" value="{{ query }}" placeholder="search artist / album / folder" autofocus>
-    <button class="btn" type="submit">search</button>
-  </form>
+  <div class="search-bar">
+    <input id="library-search" type="text" placeholder="search artist / album" autocomplete="off" autofocus>
+    <button id="library-reset" class="btn" type="button" hidden>reset</button>
+    <button id="library-favourites" class="btn toggle-btn" type="button" aria-pressed="false">favourites</button>
+  </div>
   <div class="table-wrap">
     <table class="library-table">
       <thead>
@@ -25,7 +19,7 @@
       {% for album in albums %}
         {% include '_library_row.html' %}
       {% else %}
-        <tr><td colspan="4" class="muted library-empty">no albums found</td></tr>
+        <tr class="library-empty-row"><td colspan="4" class="muted library-empty">no albums found</td></tr>
       {% endfor %}
       </tbody>
     </table>

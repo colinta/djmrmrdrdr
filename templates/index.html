@@ -68,6 +68,15 @@
         if (event.detail.elt === container) {
           scheduleRefresh();
         }
+
+        const requestElement = event.detail.elt;
+        if (
+          requestElement instanceof HTMLFormElement &&
+          requestElement.action.endsWith('/assign/add') &&
+          event.detail.successful
+        ) {
+          htmx.trigger(document.body, 'refresh-library');
+        }
       });
 
       document.body.addEventListener('htmx:responseError', (event) => {
@@ -104,6 +113,70 @@
         button.textContent = 'archive';
         button.title = 'archive';
       };
+
+      const splitWords = (value) => value.toLowerCase().trim().split(/\s+/).filter(Boolean);
+
+      const filterLibrary = () => {
+        const input = document.getElementById('library-search');
+        const resetButton = document.getElementById('library-reset');
+        const favouritesButton = document.getElementById('library-favourites');
+        const table = document.querySelector('#library-container .library-table');
+        const tbody = table ? table.querySelector('tbody') : null;
+        if (!input || !resetButton || !favouritesButton || !tbody) return;
+
+        const queryTerms = splitWords(input.value);
+        const favouritesOnly = favouritesButton.getAttribute('aria-pressed') === 'true';
+        const rows = Array.from(tbody.querySelectorAll('tr[data-search-terms]'));
+        let visibleCount = 0;
+
+        rows.forEach((row) => {
+          const sourceTerms = splitWords(row.dataset.searchTerms || '');
+          const matchesSearch = queryTerms.every((queryTerm) => sourceTerms.some((sourceTerm) => sourceTerm.startsWith(queryTerm)));
+          const matchesFavourite = !favouritesOnly || row.dataset.favourite === '1';
+          const matches = matchesSearch && matchesFavourite;
+          row.hidden = !matches;
+          if (matches) {
+            visibleCount += 1;
+          }
+        });
+
+        let emptyRow = tbody.querySelector('.library-empty-row');
+        if (!visibleCount) {
+          if (!emptyRow) {
+            emptyRow = document.createElement('tr');
+            emptyRow.className = 'library-empty-row';
+            emptyRow.innerHTML = '<td colspan="4" class="muted library-empty">no albums found</td>';
+            tbody.appendChild(emptyRow);
+          }
+        } else if (emptyRow) {
+          emptyRow.remove();
+        }
+
+        resetButton.hidden = input.value.length === 0;
+      };
+
+      const initializeLibrarySearch = () => {
+        const input = document.getElementById('library-search');
+        const resetButton = document.getElementById('library-reset');
+        const favouritesButton = document.getElementById('library-favourites');
+        if (!input || !resetButton || !favouritesButton || input.dataset.initialized === '1') return;
+
+        input.dataset.initialized = '1';
+        input.addEventListener('input', filterLibrary);
+        resetButton.addEventListener('click', () => {
+          input.value = '';
+          filterLibrary();
+          input.focus();
+        });
+        favouritesButton.addEventListener('click', () => {
+          const isPressed = favouritesButton.getAttribute('aria-pressed') === 'true';
+          favouritesButton.setAttribute('aria-pressed', String(!isPressed));
+          filterLibrary();
+        });
+        filterLibrary();
+      };
+
+      initializeLibrarySearch();
 
       document.body.addEventListener('click', (event) => {
         const button = event.target.closest('.archive-btn');
@@ -150,8 +223,9 @@
             const tbody = row.parentElement;
             row.remove();
             if (tbody && !tbody.querySelector('tr')) {
-              tbody.innerHTML = '<tr><td colspan="4" class="muted library-empty">no albums found</td></tr>';
+              tbody.innerHTML = '<tr class="library-empty-row"><td colspan="4" class="muted library-empty">no albums found</td></tr>';
             }
+            filterLibrary();
           }
           htmx.trigger(document.body, 'refresh-control-panel');
         } catch (_error) {
@@ -165,6 +239,8 @@
       document.body.addEventListener('htmx:afterSwap', (event) => {
         if (event.detail.target && event.detail.target.id === 'library-container') {
           document.querySelectorAll('.archive-btn').forEach(resetArchiveButton);
+          initializeLibrarySearch();
+          filterLibrary();
         }
       });
     })();
