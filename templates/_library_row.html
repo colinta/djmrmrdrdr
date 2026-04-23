@@ -22,7 +22,7 @@
         hx-swap="innerHTML"
       >
         <input type="hidden" name="folder" value="{{ album.folder }}">
-        <button class="btn" type="submit">assign</button>
+        <button class="btn{% if album.is_assigned %} assigned{% endif %}" type="submit"{% if album.is_assigned %} disabled title="already assigned"{% endif %}>{% if album.is_assigned %}assigned{% else %}assign{% endif %}</button>
       </form>
       <form
         method="post"

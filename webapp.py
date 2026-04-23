@@ -155,13 +155,14 @@ def _library_context() -> Dict[str, object]:
         for config in load_tags().get('tags', {}).values()
         if config.get('folder')
     }
-    favourite_folders = queue_folders | mapped_folders
+    assigned_folders = queue_folders | mapped_folders
 
     albums = [
         {
             **album,
             'search_terms': _search_terms(album['artist'], album['album']),
-            'is_favourite': album['folder'] in favourite_folders,
+            'is_favourite': album['folder'] in assigned_folders,
+            'is_assigned': album['folder'] in assigned_folders,
         }
         for album in scan_library()
     ]
@@ -313,7 +314,15 @@ def assign_add():
     folder = request.form['folder']
     queue_state = load_queue()
     queue = queue_state.get('queue', [])
-    if not any(item.get('folder') == folder for item in queue):
+    assigned_folders = {
+        config.get('folder', '')
+        for config in load_tags().get('tags', {}).values()
+        if config.get('folder')
+    }
+
+    if folder in assigned_folders:
+        message = f'{folder} already assigned'
+    elif not any(item.get('folder') == folder for item in queue):
         queue.append({"action": "play_folder", "folder": folder})
         queue_state['queue'] = queue
         save_queue(queue_state)

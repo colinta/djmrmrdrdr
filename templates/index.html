@@ -64,6 +64,32 @@
 
       scheduleRefresh();
 
+      const setAssignButtonState = (form, state) => {
+        const assignButton = form.querySelector('button[type="submit"]');
+        if (!assignButton) return;
+
+        if (state === 'assigned' || state === 'pending') {
+          assignButton.classList.add('assigned');
+          assignButton.disabled = true;
+          assignButton.title = state === 'assigned' ? 'assigned' : '...';
+          return;
+        }
+
+        assignButton.classList.remove('assigned');
+        assignButton.disabled = false;
+        assignButton.title = '';
+      };
+
+      document.body.addEventListener('htmx:beforeRequest', (event) => {
+        const requestElement = event.detail.elt;
+        if (
+          requestElement instanceof HTMLFormElement &&
+          requestElement.action.endsWith('/assign/add')
+        ) {
+          setAssignButtonState(requestElement, 'pending');
+        }
+      });
+
       document.body.addEventListener('htmx:afterRequest', (event) => {
         if (event.detail.elt === container) {
           scheduleRefresh();
@@ -72,10 +98,13 @@
         const requestElement = event.detail.elt;
         if (
           requestElement instanceof HTMLFormElement &&
-          requestElement.action.endsWith('/assign/add') &&
-          event.detail.successful
+          requestElement.action.endsWith('/assign/add')
         ) {
-          htmx.trigger(document.body, 'refresh-library');
+          if (event.detail.successful) {
+            setAssignButtonState(requestElement, 'assigned');
+          } else {
+            setAssignButtonState(requestElement, 'idle');
+          }
         }
       });
 

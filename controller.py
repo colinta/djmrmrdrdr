@@ -120,6 +120,13 @@ class Controller:
         runtime_state["last_unknown_uid"] = uid
         queue_state = load_queue()
         queue = queue_state.get("queue", [])
+        tags = load_tags()
+        tags.setdefault("tags", {})
+        assigned_folders = {
+            config.get("folder", "")
+            for config in tags["tags"].values()
+            if config.get("folder")
+        }
 
         if not queue:
             runtime_state["message"] = f"unknown tag {uid}; queue empty"
@@ -127,16 +134,35 @@ class Controller:
             print(f"Unknown NFC UID with empty queue: {uid}")
             return
 
-        assignment = queue.pop(0)
-        tags = load_tags()
-        tags.setdefault("tags", {})
+        skipped_assigned = False
+        assignment = None
+        while queue:
+            candidate = queue.pop(0)
+            folder = candidate.get("folder")
+            if folder and folder in assigned_folders:
+                skipped_assigned = True
+                continue
+            assignment = candidate
+            break
+
+        queue_state["queue"] = queue
+        save_queue(queue_state)
+
+        if assignment is None:
+            runtime_state["message"] = (
+                f"unknown tag {uid}; queued albums already assigned"
+                if skipped_assigned
+                else f"unknown tag {uid}; queue empty"
+            )
+            save_runtime_state(runtime_state)
+            print(f"No assignable albums left for UID {uid}")
+            return
+
         tags["tags"][uid] = {
             "action": assignment.get("action", "play_folder"),
             "folder": assignment["folder"],
         }
         save_tags(tags)
-        queue_state["queue"] = queue
-        save_queue(queue_state)
         self.config = tags
         self.awaiting_retap_uids.add(uid)
         runtime_state["last_assignment"] = {"uid": uid, **assignment}
