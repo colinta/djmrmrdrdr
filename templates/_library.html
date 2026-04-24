@@ -9,17 +9,17 @@
     <table class="library-table">
       <thead>
         <tr>
-          <th class="library-artist">artist</th>
-          <th class="library-album">album</th>
+          <th class="library-info">album</th>
           <th class="library-folder">folder</th>
           <th class="library-actions">actions</th>
         </tr>
       </thead>
       <tbody>
       {% for album in albums %}
+        {% set album_id = loop.index0 %}
         {% include '_library_row.html' %}
       {% else %}
-        <tr class="library-empty-row"><td colspan="4" class="muted library-empty">no albums found</td></tr>
+        <tr class="library-empty-row"><td colspan="3" class="muted library-empty">no albums found</td></tr>
       {% endfor %}
       </tbody>
     </table>

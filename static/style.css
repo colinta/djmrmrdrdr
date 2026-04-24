@@ -229,11 +229,40 @@ input[type="text"] {
   cursor: default;
 }
 
-.library-table .library-artist,
-.library-table .library-album,
+.library-table .library-info,
 .library-table .library-folder,
 .library-table .library-actions {
   vertical-align: middle;
+}
+
+.library-title {
+  color: var(--name);
+  font-weight: bold;
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+
+.library-tracks-toggle {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--number);
+  cursor: pointer;
+  font: inherit;
+}
+
+.library-track-row[hidden] {
+  display: none;
+}
+
+.library-track-cell {
+  padding-top: 0;
+}
+
+.library-track-line {
+  color: var(--name);
+  margin: 0 0 4px;
+  word-break: break-word;
 }
 
 .table-wrap {
@@ -311,12 +340,11 @@ th {
     width: 100%;
   }
 
-  .library-table tr {
+  .library-table tr.library-album-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      "artist"
-      "album"
+      "info"
       "actions";
     gap: 4px;
     padding: 10px 0;
@@ -324,20 +352,19 @@ th {
     align-items: start;
   }
 
+  .library-table tr.library-track-row {
+    display: block;
+    padding: 0 0 10px;
+    border-bottom: 1px solid rgba(65, 112, 111, 0.35);
+  }
+
   .library-table td {
     border-bottom: 0;
     padding: 0;
   }
 
-  .library-table .library-artist {
-    grid-area: artist;
-    color: var(--muted);
-  }
-
-  .library-table .library-album {
-    grid-area: album;
-    font-weight: bold;
-    color: var(--name);
+  .library-table .library-info {
+    grid-area: info;
   }
 
   .library-table .library-folder {
@@ -359,6 +386,10 @@ th {
   .library-table .library-empty {
     display: block;
     padding: 8px 0;
+  }
+
+  .library-table .library-track-cell {
+    padding: 0;
   }
 
   .mappings-table thead {

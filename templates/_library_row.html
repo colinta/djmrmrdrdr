@@ -1,6 +1,14 @@
-<tr data-search-terms="{{ album.search_terms }}"{% if album.is_favourite %} data-favourite="1"{% endif %}>
-  <td class="library-artist">{{ album.artist }}</td>
-  <td class="library-album">{{ album.album }}</td>
+<tr class="library-album-row" data-album-id="{{ album_id }}" data-search-terms="{{ album.search_terms }}"{% if album.is_favourite %} data-favourite="1"{% endif %}>
+  <td class="library-info">
+    <div class="library-title">{{ album.album }} by {{ album.artist }}</div>
+    <button
+      class="library-tracks-toggle"
+      type="button"
+      data-album-id="{{ album_id }}"
+      aria-expanded="false"
+      aria-controls="library-tracks-{{ album_id }}"
+    >▹ {{ album.track_count }} track{% if album.track_count != 1 %}s{% endif %}</button>
+  </td>
   <td class="path library-folder">{{ album.folder }}</td>
   <td class="library-actions">
     <div class="action-buttons">
@@ -43,5 +51,14 @@
         <button class="btn danger archive-btn" type="submit" data-verify="" title="archive">archive</button>
       </form>
     </div>
+  </td>
+</tr>
+<tr class="library-track-row" id="library-tracks-{{ album_id }}" data-album-id="{{ album_id }}" data-tracks-hidden="1" hidden>
+  <td colspan="3" class="library-track-cell">
+    {% for track in album.tracks %}
+      <div class="library-track-line">{{ loop.index }}. {{ track }}</div>
+    {% else %}
+      <div class="muted">no tracks found</div>
+    {% endfor %}
   </td>
 </tr>

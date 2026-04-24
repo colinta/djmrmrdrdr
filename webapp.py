@@ -33,14 +33,39 @@ class ControlPanelContext(TypedDict):
     title: Callable[[str], str]
 
 
-def scan_library() -> List[Dict[str, str]]:
-    albums: List[Dict[str, str]] = []
+class Album(TypedDict):
+    artist: str
+    album: str
+    folder: str
+    tracks: List[str]
+
+
+AUDIO_EXTENSIONS = {'.mp3', '.m4a', '.m4b', '.flac', '.wav', '.ogg', '.opus', '.aac'}
+
+
+def _album_tracks(album_dir: Path) -> List[str]:
+    return [
+        track_file.stem
+        for track_file in sorted(
+            [path for path in album_dir.iterdir() if path.is_file() and path.suffix.lower() in AUDIO_EXTENSIONS],
+            key=lambda path: path.name.lower(),
+        )
+    ]
+
+
+def scan_library() -> List[Album]:
+    albums: List[Album] = []
     if not APP_ROOT.exists():
         return albums
     for artist_dir in sorted([p for p in APP_ROOT.iterdir() if p.is_dir()], key=lambda p: p.name.lower()):
         for album_dir in sorted([p for p in artist_dir.iterdir() if p.is_dir()], key=lambda p: p.name.lower()):
             rel = album_dir.relative_to(APP_ROOT).as_posix()
-            albums.append({"artist": artist_dir.name, "album": album_dir.name, "folder": rel})
+            albums.append({
+                "artist": artist_dir.name,
+                "album": album_dir.name,
+                "folder": rel,
+                "tracks": _album_tracks(album_dir),
+            })
     return albums
 
 
@@ -160,6 +185,7 @@ def _library_context() -> Dict[str, object]:
     albums = [
         {
             **album,
+            'track_count': len(album['tracks']),
             'search_terms': _search_terms(album['artist'], album['album']),
             'is_favourite': album['folder'] in assigned_folders,
             'is_assigned': album['folder'] in assigned_folders,

@@ -164,6 +164,14 @@
           const matchesFavourite = !favouritesOnly || row.dataset.favourite === '1';
           const matches = matchesSearch && matchesFavourite;
           row.hidden = !matches;
+
+          const albumId = row.dataset.albumId;
+          const trackRow = albumId ? tbody.querySelector(`tr.library-track-row[data-album-id="${albumId}"]`) : null;
+          if (trackRow) {
+            const expanded = trackRow.dataset.tracksHidden !== '1';
+            trackRow.hidden = !matches || !expanded;
+          }
+
           if (matches) {
             visibleCount += 1;
           }
@@ -174,7 +182,7 @@
           if (!emptyRow) {
             emptyRow = document.createElement('tr');
             emptyRow.className = 'library-empty-row';
-            emptyRow.innerHTML = '<td colspan="4" class="muted library-empty">no albums found</td>';
+            emptyRow.innerHTML = '<td colspan="3" class="muted library-empty">no albums found</td>';
             tbody.appendChild(emptyRow);
           }
         } else if (emptyRow) {
@@ -208,6 +216,20 @@
       initializeLibrarySearch();
 
       document.body.addEventListener('click', (event) => {
+        const toggle = event.target.closest('.library-tracks-toggle');
+        if (toggle) {
+          const albumId = toggle.dataset.albumId;
+          const trackRow = albumId ? document.querySelector(`#library-container tr.library-track-row[data-album-id="${albumId}"]`) : null;
+          if (trackRow) {
+            const hidden = trackRow.dataset.tracksHidden === '1';
+            trackRow.dataset.tracksHidden = hidden ? '0' : '1';
+            trackRow.hidden = !hidden ? true : false;
+            toggle.setAttribute('aria-expanded', hidden ? 'true' : 'false');
+            toggle.textContent = `${hidden ? '▿' : '▹'} ${toggle.textContent.replace(/^[▹▿]\s*/, '')}`;
+          }
+          return;
+        }
+
         const button = event.target.closest('.archive-btn');
         if (!button) return;
         if (button.dataset.verify) {
@@ -250,9 +272,14 @@
 
           if (row) {
             const tbody = row.parentElement;
+            const albumId = row.dataset.albumId;
+            const trackRow = albumId ? tbody.querySelector(`tr.library-track-row[data-album-id="${albumId}"]`) : null;
             row.remove();
-            if (tbody && !tbody.querySelector('tr')) {
-              tbody.innerHTML = '<tr class="library-empty-row"><td colspan="4" class="muted library-empty">no albums found</td></tr>';
+            if (trackRow) {
+              trackRow.remove();
+            }
+            if (tbody && !tbody.querySelector('tr[data-search-terms]')) {
+              tbody.innerHTML = '<tr class="library-empty-row"><td colspan="3" class="muted library-empty">no albums found</td></tr>';
             }
             filterLibrary();
           }
