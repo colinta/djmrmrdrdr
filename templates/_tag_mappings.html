@@ -5,7 +5,9 @@
       <thead>
         <tr>
           <th class="mapping-uid">uid</th>
-          <th class="mapping-folder">folder</th>
+          <th class="mapping-type">type</th>
+          <th class="mapping-target">target</th>
+          <th class="mapping-shuffle">shuffle</th>
           <th class="mapping-delete">delete</th>
         </tr>
       </thead>
@@ -13,7 +15,7 @@
       {% for mapping in mappings %}
         {% include '_tag_mapping_row.html' %}
       {% else %}
-        <tr><td colspan="3" class="muted">no mappings</td></tr>
+        <tr><td colspan="5" class="muted">no mappings</td></tr>
       {% endfor %}
       </tbody>
     </table>

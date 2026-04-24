@@ -323,6 +323,20 @@ th {
   background: var(--panel);
 }
 
+.library-sort-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+}
+
+.library-sort-link:hover {
+  color: var(--accent);
+}
+
 .queue-list {
   margin: 0;
   padding-left: 22px;

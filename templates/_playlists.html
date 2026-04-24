@@ -55,6 +55,17 @@
                 </form>
                 <form
                   method="post"
+                  action="{{ url_for('mapping_assign_playlist') }}"
+                  hx-post="{{ url_for('mapping_assign_playlist') }}"
+                  hx-target="#playlists-container"
+                  hx-swap="innerHTML"
+                >
+                  <input type="hidden" name="uid" value="{{ last_unknown_uid or '' }}">
+                  <input type="hidden" name="playlist" value="{{ playlist.name }}">
+                  <button class="btn" type="submit"{% if not last_unknown_uid %} disabled title="scan an unknown tag first"{% endif %}>assign</button>
+                </form>
+                <form
+                  method="post"
                   action="{{ url_for('playlists_delete') }}"
                   hx-post="{{ url_for('playlists_delete') }}"
                   hx-target="#playlists-container"
@@ -72,4 +83,9 @@
       </tbody>
     </table>
   </div>
+  {% if last_unknown_uid %}
+    <div class="muted">ready to assign unknown tag: {{ last_unknown_uid }}</div>
+  {% else %}
+    <div class="muted">scan an unknown tag to enable playlist assignment</div>
+  {% endif %}
 </section>

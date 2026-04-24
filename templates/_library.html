@@ -9,7 +9,23 @@
     <table class="library-table">
       <thead>
         <tr>
-          <th class="library-info">album</th>
+          <th class="library-info">
+            <button
+              class="library-sort-link"
+              type="button"
+              hx-get="{{ url_for('library_partial', sort='album') }}"
+              hx-target="#library-container"
+              hx-swap="innerHTML"
+            >album{% if sort_by == 'album' %} ↓{% endif %}</button>
+            by
+            <button
+              class="library-sort-link"
+              type="button"
+              hx-get="{{ url_for('library_partial', sort='artist') }}"
+              hx-target="#library-container"
+              hx-swap="innerHTML"
+            >artist{% if sort_by == 'artist' %} ↓{% endif %}</button>
+          </th>
           <th class="library-folder">folder</th>
           <th class="library-actions">actions</th>
         </tr>

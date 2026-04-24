@@ -1,12 +1,23 @@
 <tr>
   <td class="path mapping-uid">{{ mapping.uid }}</td>
-  <td class="mapping-folder">
+  <td class="mapping-type">{% if mapping.action == 'play_playlist' %}playlist{% else %}folder{% endif %}</td>
+  <td class="mapping-target">
     <div class="mapping-form">
-      <input type="text" value="{{ mapping.folder }}" readonly>
+      <input type="text" value="{% if mapping.action == 'play_playlist' %}{{ mapping.playlist }}{% else %}{{ mapping.folder }}{% endif %}" readonly>
+      {% if mapping.action == 'play_playlist' and mapping.playlist_exists is sameas false %}
+        <div class="muted">playlist missing</div>
+      {% endif %}
     </div>
   </td>
+  <td class="mapping-shuffle">{% if mapping.action == 'play_playlist' %}{{ 'yes' if mapping.shuffle else 'no' }}{% else %}—{% endif %}</td>
   <td class="mapping-delete">
-    <form method="post" action="{{ url_for('mapping_delete') }}">
+    <form
+      method="post"
+      action="{{ url_for('mapping_delete') }}"
+      hx-post="{{ url_for('mapping_delete') }}"
+      hx-target="#tag-mappings-container"
+      hx-swap="innerHTML"
+    >
       <input type="hidden" name="uid" value="{{ mapping.uid }}">
       <button class="btn danger" type="submit">delete</button>
     </form>

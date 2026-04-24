@@ -169,8 +169,10 @@ def _current_queue_files() -> list[str]:
 
 
 def _playlists_context() -> Dict[str, object]:
+    runtime = load_runtime_state()
     return {
         'playlists': load_playlists(),
+        'last_unknown_uid': runtime.get('last_unknown_uid'),
         'title': terminal_title,
     }
 
@@ -192,6 +194,15 @@ def _search_terms(*parts: str) -> str:
 
 
 
+def _library_sort_key(album: Album, sort_by: str) -> tuple[str, str]:
+    artist = album['artist'].lower()
+    title = album['album'].lower()
+    if sort_by == 'album':
+        return (title, artist)
+    return (artist, title)
+
+
+
 def _library_context() -> Dict[str, object]:
     queue_folders = {
         item.get('folder', '')
@@ -204,6 +215,9 @@ def _library_context() -> Dict[str, object]:
         if config.get('folder')
     }
     assigned_folders = queue_folders | mapped_folders
+    sort_by = request.args.get('sort', 'artist').lower()
+    if sort_by not in {'artist', 'album'}:
+        sort_by = 'artist'
 
     albums = [
         {
@@ -213,10 +227,11 @@ def _library_context() -> Dict[str, object]:
             'is_favourite': album['folder'] in assigned_folders,
             'is_assigned': album['folder'] in assigned_folders,
         }
-        for album in scan_library()
+        for album in sorted(scan_library(), key=lambda album: _library_sort_key(album, sort_by))
     ]
     return {
         'albums': albums,
+        'sort_by': sort_by,
         'title': terminal_title,
     }
 
@@ -231,6 +246,24 @@ def _render_library() -> str:
 
 def _render_playlists() -> str:
     return render_template('_playlists.html', **_playlists_context())
+
+
+def _tag_mappings_context() -> Dict[str, object]:
+    tags = load_tags().get('tags', {})
+    playlists = {playlist.get('name', '') for playlist in load_playlists()}
+    mappings = [{
+        'uid': uid,
+        **cfg,
+        'playlist_exists': cfg.get('playlist') in playlists if cfg.get('action') == 'play_playlist' else None,
+    } for uid, cfg in sorted(tags.items(), key=lambda item: (item[1].get('playlist', item[1].get('folder', '')), item[0]))]
+    return {
+        'mappings': mappings,
+        'title': terminal_title,
+    }
+
+
+def _render_tag_mappings() -> str:
+    return render_template('_tag_mappings.html', **_tag_mappings_context())
 
 
 def _redirect_to_index() -> Response:
@@ -257,17 +290,20 @@ def index():
     queue_state = load_queue()
     control_panel = _control_panel_context()
     current_track = _current_track()
-    tags = load_tags().get('tags', {})
-    mappings = [{"uid": uid, **cfg} for uid, cfg in sorted(tags.items(), key=lambda item: item[1].get('folder', ''))]
+    tag_mappings = _tag_mappings_context()
+    library = _library_context()
     return render_template(
         'index.html',
         current_queue=_current_queue(current_track),
         current_track=current_track,
         queue=queue_state.get('queue', []),
         runtime=control_panel['runtime'],
-        mappings=mappings,
         playlists=load_playlists(),
-        **_library_context(),
+        last_unknown_uid=control_panel['runtime'].get('last_unknown_uid'),
+        mappings=tag_mappings['mappings'],
+        albums=library['albums'],
+        sort_by=library['sort_by'],
+        title=terminal_title,
     )
 
 
@@ -284,6 +320,11 @@ def library_partial():
 @app.get('/playlists')
 def playlists_partial():
     return _render_playlists()
+
+
+@app.get('/tag-mappings')
+def tag_mappings_partial():
+    return _render_tag_mappings()
 
 
 @app.get('/current-queue')
@@ -323,7 +364,10 @@ def playlists_save_current():
 
     if request.headers.get('HX-Request') == 'true':
         response = make_response(_render_playlists())
-        response.headers['HX-Trigger'] = 'refresh-control-panel'
+        response.headers['HX-Trigger'] = json.dumps({
+            'refresh-control-panel': True,
+            'refresh-tag-mappings': True,
+        })
         return response
     return _redirect_to_index()
 
@@ -390,6 +434,40 @@ def playlists_queue():
     return _redirect_to_index()
 
 
+@app.post('/mappings/assign-playlist')
+def mapping_assign_playlist():
+    uid = request.form.get('uid', '').strip()
+    playlist_name = request.form.get('playlist', '').strip()
+    shuffle = request.form.get('shuffle') == '1'
+    runtime = load_runtime_state()
+    tags = load_tags()
+    tags.setdefault('tags', {})
+
+    playlist = next((item for item in load_playlists() if item.get('name') == playlist_name), None)
+    if not uid:
+        runtime['message'] = 'tag uid required for playlist assignment'
+    elif not playlist:
+        runtime['message'] = f'playlist {playlist_name} not found'
+    else:
+        tags['tags'][uid] = {
+            'action': 'play_playlist',
+            'playlist': playlist_name,
+            'shuffle': shuffle,
+        }
+        save_tags(tags)
+        runtime['message'] = f'assigned {uid} -> playlist {playlist_name}'
+    save_runtime_state(runtime)
+
+    if request.headers.get('HX-Request') == 'true':
+        response = make_response(_render_playlists())
+        response.headers['HX-Trigger'] = json.dumps({
+            'refresh-control-panel': True,
+            'refresh-tag-mappings': True,
+        })
+        return response
+    return _redirect_to_index()
+
+
 @app.post('/playlists/delete')
 def playlists_delete():
     name = request.form.get('name', '').strip()
@@ -406,7 +484,10 @@ def playlists_delete():
 
     if request.headers.get('HX-Request') == 'true':
         response = make_response(_render_playlists())
-        response.headers['HX-Trigger'] = 'refresh-control-panel'
+        response.headers['HX-Trigger'] = json.dumps({
+            'refresh-control-panel': True,
+            'refresh-tag-mappings': True,
+        })
         return response
     return _redirect_to_index()
 
@@ -624,10 +705,16 @@ def mapping_edit():
     else:
         mapping['folder'] = folder
         mapping['action'] = 'play_folder'
+        mapping.pop('playlist', None)
+        mapping.pop('shuffle', None)
         save_tags(tags)
         runtime['message'] = f'updated mapping for {uid}'
 
     save_runtime_state(runtime)
+    if request.headers.get('HX-Request') == 'true':
+        response = make_response(_render_tag_mappings())
+        response.headers['HX-Trigger'] = 'refresh-control-panel'
+        return response
     return redirect(url_for('index'))
 
 
@@ -640,6 +727,10 @@ def mapping_delete():
     runtime = load_runtime_state()
     runtime['message'] = f'deleted mapping for {uid}'
     save_runtime_state(runtime)
+    if request.headers.get('HX-Request') == 'true':
+        response = make_response(_render_tag_mappings())
+        response.headers['HX-Trigger'] = 'refresh-control-panel'
+        return response
     return redirect(url_for('index'))
 
 

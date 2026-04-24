@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from typing import Dict, Iterator
 
 from mpd import CommandError, ConnectionError, MPDClient
+from state import load_playlists
 
 
 class MusicPlayer:
@@ -58,8 +59,17 @@ class MusicPlayer:
 
     def play_playlist(self, name: str, shuffle: bool = False) -> None:
         def operation(client: MPDClient) -> None:
+            playlist = next((item for item in load_playlists() if item.get("name") == name), None)
+            if not playlist:
+                raise ValueError(f"playlist not found: {name}")
+
+            tracks = [track for track in playlist.get("tracks", []) if track]
+            if not tracks:
+                raise ValueError(f"playlist is empty: {name}")
+
             client.clear()
-            client.load(name)
+            for track in tracks:
+                client.add(track)
             if shuffle:
                 client.shuffle()
             client.play(0)

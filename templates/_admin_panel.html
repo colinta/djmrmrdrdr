@@ -3,6 +3,7 @@
 
   <div class="admin-actions">
     <div class="admin-message"><span class="label">message</span> <span class="value accent">{{ runtime.message }}</span></div>
+    <div class="admin-message"><span class="label">last unknown tag</span> <span class="value">{{ runtime.last_unknown_uid or 'none' }}</span></div>
     <div class="admin-buttons">
       <button class="btn" type="button" onclick="window.location.reload()">reload</button>
       <a class="btn" href="{{ url_for('admin_export_albums') }}" download>export</a>
@@ -18,5 +19,12 @@
     {% include '_assignment_queue.html' %}
   </div>
 
-  {% include '_tag_mappings.html' %}
+  <div
+    id="tag-mappings-container"
+    hx-get="/tag-mappings"
+    hx-trigger="refresh-tag-mappings from:body"
+    hx-swap="innerHTML"
+  >
+    {% include '_tag_mappings.html' %}
+  </div>
 </aside>
