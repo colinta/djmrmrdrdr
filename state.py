@@ -7,6 +7,7 @@ import yaml
 
 TAGS_PATH = Path("/etc/musicplayer/tags.yaml")
 QUEUE_PATH = Path("/etc/musicplayer/assignment_queue.yaml")
+PLAYLISTS_PATH = Path("/etc/musicplayer/playlists.yaml")
 RUNTIME_STATE_PATH = Path("/opt/musicplayer/runtime/state.yaml")
 
 T = TypeVar("T")
@@ -35,6 +36,13 @@ class QueueState(TypedDict):
 
 class LastAssignment(QueueItem):
     uid: str
+
+
+class Playlist(TypedDict):
+    name: str
+    tracks: list[str]
+    created_at: str
+    created_by: str
 
 
 class RuntimeState(TypedDict):
@@ -80,6 +88,36 @@ def save_queue(data: QueueState) -> None:
     data.setdefault("assignment_mode", False)
     data.setdefault("queue", [])
     _save_yaml(QUEUE_PATH, data)
+
+
+def load_playlists() -> list[Playlist]:
+    data = _load_yaml(PLAYLISTS_PATH, [])
+    if not isinstance(data, list):
+        return []
+
+    playlists: list[Playlist] = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name", "")).strip()
+        tracks = item.get("tracks", [])
+        created_at = str(item.get("created_at", "")).strip()
+        created_by = str(item.get("created_by", "Tory")).strip() or "Tory"
+        if not name:
+            continue
+        if not isinstance(tracks, list):
+            tracks = []
+        playlists.append({
+            "name": name,
+            "tracks": [str(track) for track in tracks if str(track).strip()],
+            "created_at": created_at,
+            "created_by": created_by,
+        })
+    return playlists
+
+
+def save_playlists(data: list[Playlist]) -> None:
+    _save_yaml(PLAYLISTS_PATH, data)
 
 
 def load_runtime_state() -> RuntimeState:

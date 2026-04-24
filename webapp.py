@@ -5,13 +5,24 @@ import logging
 import os
 import shutil
 import subprocess
+from datetime import datetime
 from pathlib import Path
 from typing import Callable, Dict, List, NotRequired, TypedDict
 
-from flask import Flask, Response, redirect, render_template, request, url_for
+from flask import Flask, Response, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 
-from state import RuntimeState, load_queue, load_runtime_state, load_tags, save_queue, save_runtime_state, save_tags
+from state import (
+    RuntimeState,
+    load_playlists,
+    load_queue,
+    load_runtime_state,
+    load_tags,
+    save_playlists,
+    save_queue,
+    save_runtime_state,
+    save_tags,
+)
 
 APP_ROOT = Path('/srv/music')
 ARCHIVE_ROOT = Path('/srv/music-archive')
@@ -152,6 +163,18 @@ def _current_queue(current_track: Track | None = None) -> List[Track]:
     return queue
 
 
+def _current_queue_files() -> list[str]:
+    output = _run_mpc(['mpc', 'playlist', '-f', '%file%'])
+    return [line.strip() for line in output.splitlines() if line.strip()] if output else []
+
+
+def _playlists_context() -> Dict[str, object]:
+    return {
+        'playlists': load_playlists(),
+        'title': terminal_title,
+    }
+
+
 def _control_panel_context() -> ControlPanelContext:
     runtime = load_runtime_state()
     return {
@@ -206,6 +229,10 @@ def _render_library() -> str:
     return render_template('_library.html', **_library_context())
 
 
+def _render_playlists() -> str:
+    return render_template('_playlists.html', **_playlists_context())
+
+
 def _redirect_to_index() -> Response:
     return redirect(url_for('index'))
 
@@ -239,6 +266,7 @@ def index():
         queue=queue_state.get('queue', []),
         runtime=control_panel['runtime'],
         mappings=mappings,
+        playlists=load_playlists(),
         **_library_context(),
     )
 
@@ -253,6 +281,11 @@ def library_partial():
     return _render_library()
 
 
+@app.get('/playlists')
+def playlists_partial():
+    return _render_playlists()
+
+
 @app.get('/current-queue')
 def current_queue_partial():
     current_track = _current_track()
@@ -262,6 +295,139 @@ def current_queue_partial():
         current_track=current_track,
         title=terminal_title,
     )
+
+
+@app.post('/playlists/save-current')
+def playlists_save_current():
+    name = request.form.get('name', '').strip()
+    runtime = load_runtime_state()
+    playlists = load_playlists()
+    tracks = _current_queue_files()
+
+    if not name:
+        runtime['message'] = 'playlist name required'
+    elif not tracks:
+        runtime['message'] = 'cannot save empty queue as playlist'
+    elif any(playlist.get('name') == name for playlist in playlists):
+        runtime['message'] = f'playlist {name} already exists'
+    else:
+        playlists.append({
+            'name': name,
+            'tracks': tracks,
+            'created_at': datetime.now().isoformat(timespec='seconds'),
+            'created_by': 'Tory',
+        })
+        save_playlists(playlists)
+        runtime['message'] = f'saved playlist {name}'
+    save_runtime_state(runtime)
+
+    if request.headers.get('HX-Request') == 'true':
+        response = make_response(_render_playlists())
+        response.headers['HX-Trigger'] = 'refresh-control-panel'
+        return response
+    return _redirect_to_index()
+
+
+@app.post('/playlists/play')
+def playlists_play():
+    name = request.form.get('name', '').strip()
+    runtime = load_runtime_state()
+    playlist = next((item for item in load_playlists() if item.get('name') == name), None)
+
+    if not playlist:
+        runtime['message'] = f'playlist {name} not found'
+    elif not playlist.get('tracks'):
+        runtime['message'] = f'playlist {name} is empty'
+    else:
+        try:
+            subprocess.run(['mpc', 'clear'], check=True, capture_output=True, text=True)
+            for track in playlist['tracks']:
+                subprocess.run(['mpc', 'add', track], check=True, capture_output=True, text=True)
+            subprocess.run(['mpc', 'play'], check=True, capture_output=True, text=True)
+            runtime['message'] = f'playing playlist {name}'
+        except subprocess.CalledProcessError as exc:
+            error = exc.stderr.strip() or exc.stdout.strip() or str(exc)
+            runtime['message'] = f'playlist play failed for {name}: {error}'
+    save_runtime_state(runtime)
+
+    if request.headers.get('HX-Request') == 'true':
+        response = make_response(_render_playlists())
+        response.headers['HX-Trigger'] = json.dumps({
+            'refresh-control-panel': True,
+            'refresh-current-queue': True,
+        })
+        return response
+    return _redirect_to_index()
+
+
+@app.post('/playlists/queue')
+def playlists_queue():
+    name = request.form.get('name', '').strip()
+    runtime = load_runtime_state()
+    playlist = next((item for item in load_playlists() if item.get('name') == name), None)
+
+    if not playlist:
+        runtime['message'] = f'playlist {name} not found'
+    elif not playlist.get('tracks'):
+        runtime['message'] = f'playlist {name} is empty'
+    else:
+        try:
+            for track in playlist['tracks']:
+                subprocess.run(['mpc', 'add', track], check=True, capture_output=True, text=True)
+            runtime['message'] = f'queued playlist {name}'
+        except subprocess.CalledProcessError as exc:
+            error = exc.stderr.strip() or exc.stdout.strip() or str(exc)
+            runtime['message'] = f'playlist queue failed for {name}: {error}'
+    save_runtime_state(runtime)
+
+    if request.headers.get('HX-Request') == 'true':
+        response = make_response(_render_playlists())
+        response.headers['HX-Trigger'] = json.dumps({
+            'refresh-control-panel': True,
+            'refresh-current-queue': True,
+        })
+        return response
+    return _redirect_to_index()
+
+
+@app.post('/playlists/delete')
+def playlists_delete():
+    name = request.form.get('name', '').strip()
+    runtime = load_runtime_state()
+    playlists = load_playlists()
+    remaining = [playlist for playlist in playlists if playlist.get('name') != name]
+
+    if len(remaining) == len(playlists):
+        runtime['message'] = f'playlist {name} not found'
+    else:
+        save_playlists(remaining)
+        runtime['message'] = f'deleted playlist {name}'
+    save_runtime_state(runtime)
+
+    if request.headers.get('HX-Request') == 'true':
+        response = make_response(_render_playlists())
+        response.headers['HX-Trigger'] = 'refresh-control-panel'
+        return response
+    return _redirect_to_index()
+
+
+@app.post('/current-queue/clear')
+def current_queue_clear():
+    runtime = load_runtime_state()
+    try:
+        subprocess.run(['mpc', 'stop'], check=True, capture_output=True, text=True)
+        subprocess.run(['mpc', 'clear'], check=True, capture_output=True, text=True)
+        runtime['message'] = 'cleared current queue'
+    except subprocess.CalledProcessError as exc:
+        error = exc.stderr.strip() or exc.stdout.strip() or str(exc)
+        runtime['message'] = f'clear queue failed: {error}'
+    save_runtime_state(runtime)
+
+    if request.headers.get('HX-Request') == 'true':
+        response = make_response(current_queue_partial())
+        response.headers['HX-Trigger'] = 'refresh-control-panel'
+        return response
+    return _redirect_to_index()
 
 
 @app.get('/assigment-queue')

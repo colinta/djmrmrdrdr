@@ -26,19 +26,30 @@
     {% include '_admin_panel.html' %}
 
     <main class="grid">
-      <div
-        id="library-container"
-        hx-get="/library"
-        hx-trigger="refresh-library from:body"
-        hx-swap="innerHTML"
-      >
-        {% include '_library.html' %}
+      <div class="stack-column">
+        <div
+          id="library-container"
+          hx-get="/library"
+          hx-trigger="refresh-library from:body"
+          hx-swap="innerHTML"
+        >
+          {% include '_library.html' %}
+        </div>
+
+        <div
+          id="playlists-container"
+          hx-get="/playlists"
+          hx-trigger="refresh-playlists from:body"
+          hx-swap="innerHTML"
+        >
+          {% include '_playlists.html' %}
+        </div>
       </div>
 
       <div
         id="current-queue-container"
         hx-get="/current-queue"
-        hx-trigger="load, every 5s"
+        hx-trigger="load, every 5s, refresh-current-queue from:body"
         hx-swap="innerHTML"
       >
         {% include '_current_queue.html' %}

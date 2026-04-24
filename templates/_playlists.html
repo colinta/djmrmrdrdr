@@ -1,0 +1,75 @@
+<section class="panel playlists-panel">
+  <div class="panel-title"><span>{{ title('playlists') }}</span></div>
+
+  <form
+    class="playlist-save-form"
+    method="post"
+    action="{{ url_for('playlists_save_current') }}"
+    hx-post="{{ url_for('playlists_save_current') }}"
+    hx-target="#playlists-container"
+    hx-swap="innerHTML"
+  >
+    <input type="text" name="name" placeholder="playlist name" autocomplete="off">
+    <button class="btn" type="submit">save current queue</button>
+  </form>
+
+  <div class="table-wrap short">
+    <table class="playlists-table">
+      <thead>
+        <tr>
+          <th>name</th>
+          <th>tracks</th>
+          <th>created</th>
+          <th>by</th>
+          <th>actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for playlist in playlists %}
+          <tr>
+            <td class="value">{{ playlist.name }}</td>
+            <td>{{ playlist.tracks|length }}</td>
+            <td class="muted">{{ playlist.created_at }}</td>
+            <td>{{ playlist.created_by }}</td>
+            <td>
+              <div class="action-buttons playlist-actions">
+                <form
+                  method="post"
+                  action="{{ url_for('playlists_play') }}"
+                  hx-post="{{ url_for('playlists_play') }}"
+                  hx-target="#playlists-container"
+                  hx-swap="innerHTML"
+                >
+                  <input type="hidden" name="name" value="{{ playlist.name }}">
+                  <button class="btn" type="submit">play</button>
+                </form>
+                <form
+                  method="post"
+                  action="{{ url_for('playlists_queue') }}"
+                  hx-post="{{ url_for('playlists_queue') }}"
+                  hx-target="#playlists-container"
+                  hx-swap="innerHTML"
+                >
+                  <input type="hidden" name="name" value="{{ playlist.name }}">
+                  <button class="btn" type="submit">queue</button>
+                </form>
+                <form
+                  method="post"
+                  action="{{ url_for('playlists_delete') }}"
+                  hx-post="{{ url_for('playlists_delete') }}"
+                  hx-target="#playlists-container"
+                  hx-swap="innerHTML"
+                >
+                  <input type="hidden" name="name" value="{{ playlist.name }}">
+                  <button class="btn danger" type="submit">delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5" class="muted">no playlists saved</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>

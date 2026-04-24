@@ -54,6 +54,12 @@ a[href^="tel"] {
   min-width: 0;
 }
 
+.stack-column {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+
 .library-panel { grid-column: auto; }
 
 .panel {
@@ -186,6 +192,31 @@ input[type="text"] {
   display: flex;
   gap: 8px;
   align-items: center;
+}
+
+.panel-corner-action {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  z-index: 1;
+}
+
+.playlist-save-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.playlist-save-form input[type="text"] {
+  min-width: 0;
+}
+
+.playlists-table td {
+  word-break: break-word;
+}
+
+.playlist-actions {
+  flex-wrap: wrap;
 }
 
 .admin-actions {

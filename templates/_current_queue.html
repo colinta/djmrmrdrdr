@@ -1,5 +1,15 @@
 <section class="panel current-queue-panel">
   <div class="panel-title"><span>{{ title('current queue') }}</span></div>
+  <form
+    class="panel-corner-action"
+    method="post"
+    action="{{ url_for('current_queue_clear') }}"
+    hx-post="{{ url_for('current_queue_clear') }}"
+    hx-target="#current-queue-container"
+    hx-swap="innerHTML"
+  >
+    <button class="btn danger" type="submit">clear queue</button>
+  </form>
   <ol class="queue-list current-queue-list">
     {% for item in current_queue %}
       <li>
