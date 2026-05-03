@@ -163,9 +163,27 @@ def _current_queue(current_track: Track | None = None) -> List[Track]:
     return queue
 
 
-def _current_queue_files() -> list[str]:
-    output = _run_mpc(['mpc', 'playlist', '-f', '%file%'])
-    return [line.strip() for line in output.splitlines() if line.strip()] if output else []
+def _current_queue_files(current_track: Track | None = None) -> list[str]:
+    output = _run_mpc(['mpc', 'playlist', '-f', '%position%\t%file%'])
+    if not output:
+        return []
+
+    queue = []
+    for line in output.splitlines():
+        if not line.strip():
+            continue
+        position, _, path = line.partition('\t')
+        queue.append({
+            'position': int(position) if position.isdigit() else None,
+            'path': path.strip(),
+        })
+
+    if current_track and current_track.get('position') is not None:
+        current_position = current_track['position']
+        if any(item.get('position') == current_position for item in queue):
+            queue = [item for item in queue if item.get('position') is not None and item['position'] >= current_position]
+
+    return [item['path'] for item in queue if item.get('path')]
 
 
 def _playlists_context() -> Dict[str, object]:
@@ -354,7 +372,7 @@ def playlists_save_current():
     name = request.form.get('name', '').strip()
     runtime = load_runtime_state()
     playlists = load_playlists()
-    tracks = _current_queue_files()
+    tracks = _current_queue_files(_current_track())
 
     if not name:
         runtime['message'] = 'playlist name required'

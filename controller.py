@@ -156,9 +156,6 @@ class Controller:
             assignment = candidate
             break
 
-        queue_state["queue"] = queue
-        save_queue(queue_state)
-
         if assignment is None:
             runtime_state["message"] = (
                 f"unknown tag {uid}; queued items already assigned"
@@ -181,6 +178,8 @@ class Controller:
                 "folder": assignment["folder"],
             }
         save_tags(tags)
+        queue_state["queue"] = queue
+        save_queue(queue_state)
         self.config = tags
         self.awaiting_retap_uids.add(uid)
         runtime_state["last_assignment"] = {"uid": uid, **assignment}
