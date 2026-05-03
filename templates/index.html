@@ -39,7 +39,7 @@
         <div
           id="playlists-container"
           hx-get="/playlists"
-          hx-trigger="load, every 5s, refresh-playlists from:body"
+          hx-trigger="load, refresh-playlists from:body"
           hx-swap="innerHTML"
         >
           {% include '_playlists.html' %}
@@ -79,10 +79,17 @@
         const assignButton = form.querySelector('button[type="submit"]');
         if (!assignButton) return;
 
-        if (state === 'assigned' || state === 'pending') {
+        if (state === 'pending') {
           assignButton.classList.add('assigned');
           assignButton.disabled = true;
-          assignButton.title = state === 'assigned' ? 'assigned' : '...';
+          assignButton.title = '...';
+          return;
+        }
+
+        if (state === 'assigned') {
+          assignButton.classList.add('assigned');
+          assignButton.disabled = false;
+          assignButton.title = 'assigned';
           return;
         }
 
@@ -91,12 +98,16 @@
         assignButton.title = '';
       };
 
+      const isAssignForm = (element) => (
+        element instanceof HTMLFormElement && (
+          element.action.endsWith('/assign/add') ||
+          element.action.endsWith('/mappings/assign-playlist')
+        )
+      );
+
       document.body.addEventListener('htmx:beforeRequest', (event) => {
         const requestElement = event.detail.elt;
-        if (
-          requestElement instanceof HTMLFormElement &&
-          requestElement.action.endsWith('/assign/add')
-        ) {
+        if (isAssignForm(requestElement)) {
           setAssignButtonState(requestElement, 'pending');
         }
       });
@@ -107,10 +118,7 @@
         }
 
         const requestElement = event.detail.elt;
-        if (
-          requestElement instanceof HTMLFormElement &&
-          requestElement.action.endsWith('/assign/add')
-        ) {
+        if (isAssignForm(requestElement)) {
           if (event.detail.successful) {
             setAssignButtonState(requestElement, 'assigned');
           } else {

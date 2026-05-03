@@ -57,12 +57,11 @@
                   method="post"
                   action="{{ url_for('mapping_assign_playlist') }}"
                   hx-post="{{ url_for('mapping_assign_playlist') }}"
-                  hx-target="#playlists-container"
+                  hx-target="#assignment-queue-container"
                   hx-swap="innerHTML"
                 >
-                  <input type="hidden" name="uid" value="{{ last_unknown_uid or '' }}">
                   <input type="hidden" name="playlist" value="{{ playlist.name }}">
-                  <button class="btn" type="submit"{% if not last_unknown_uid %} disabled title="scan an unknown tag first"{% endif %}>assign</button>
+                  <button class="btn{% if playlist.name in assigned_playlists %} assigned{% endif %}" type="submit"{% if playlist.name in assigned_playlists %} disabled title="assigned"{% endif %}>{% if playlist.name in assigned_playlists %}assigned{% else %}assign{% endif %}</button>
                 </form>
                 <form
                   method="post"

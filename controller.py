@@ -125,7 +125,12 @@ class Controller:
         assigned_folders = {
             config.get("folder", "")
             for config in tags["tags"].values()
-            if config.get("folder")
+            if config.get("action") == "play_folder" and config.get("folder")
+        }
+        assigned_playlists = {
+            config.get("playlist", "")
+            for config in tags["tags"].values()
+            if config.get("action") == "play_playlist" and config.get("playlist")
         }
 
         if not queue:
@@ -138,8 +143,14 @@ class Controller:
         assignment = None
         while queue:
             candidate = queue.pop(0)
+            action = candidate.get("action", "play_folder")
             folder = candidate.get("folder")
-            if folder and folder in assigned_folders:
+            playlist = candidate.get("playlist")
+            if action == "play_playlist":
+                if playlist and playlist in assigned_playlists:
+                    skipped_assigned = True
+                    continue
+            elif folder and folder in assigned_folders:
                 skipped_assigned = True
                 continue
             assignment = candidate
@@ -150,25 +161,33 @@ class Controller:
 
         if assignment is None:
             runtime_state["message"] = (
-                f"unknown tag {uid}; queued albums already assigned"
+                f"unknown tag {uid}; queued items already assigned"
                 if skipped_assigned
                 else f"unknown tag {uid}; queue empty"
             )
             save_runtime_state(runtime_state)
-            print(f"No assignable albums left for UID {uid}")
+            print(f"No assignable queue items left for UID {uid}")
             return
 
-        tags["tags"][uid] = {
-            "action": assignment.get("action", "play_folder"),
-            "folder": assignment["folder"],
-        }
+        if assignment.get("action") == "play_playlist":
+            tags["tags"][uid] = {
+                "action": "play_playlist",
+                "playlist": assignment["playlist"],
+                "shuffle": bool(assignment.get("shuffle", False)),
+            }
+        else:
+            tags["tags"][uid] = {
+                "action": assignment.get("action", "play_folder"),
+                "folder": assignment["folder"],
+            }
         save_tags(tags)
         self.config = tags
         self.awaiting_retap_uids.add(uid)
         runtime_state["last_assignment"] = {"uid": uid, **assignment}
-        runtime_state["message"] = f"assigned {uid} -> {assignment['folder']}; remove tag, then tap again to play"
+        target = assignment.get("playlist") if assignment.get("action") == "play_playlist" else assignment.get("folder")
+        runtime_state["message"] = f"assigned {uid} -> {target}; remove tag, then tap again to play"
         save_runtime_state(runtime_state)
-        print(f"Assigned UID {uid} to {assignment['folder']}; waiting for removal before playback")
+        print(f"Assigned UID {uid} to {target}; waiting for removal before playback")
 
 
 def main() -> None:

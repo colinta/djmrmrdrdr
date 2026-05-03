@@ -170,9 +170,20 @@ def _current_queue_files() -> list[str]:
 
 def _playlists_context() -> Dict[str, object]:
     runtime = load_runtime_state()
+    assigned_playlists = {
+        config.get('playlist', '')
+        for config in load_tags().get('tags', {}).values()
+        if config.get('action') == 'play_playlist' and config.get('playlist')
+    }
+    queued_playlists = {
+        item.get('playlist', '')
+        for item in load_queue().get('queue', [])
+        if item.get('action') == 'play_playlist' and item.get('playlist')
+    }
     return {
         'playlists': load_playlists(),
         'last_unknown_uid': runtime.get('last_unknown_uid'),
+        'assigned_playlists': assigned_playlists | queued_playlists,
         'title': terminal_title,
     }
 
@@ -436,33 +447,40 @@ def playlists_queue():
 
 @app.post('/mappings/assign-playlist')
 def mapping_assign_playlist():
-    uid = request.form.get('uid', '').strip()
     playlist_name = request.form.get('playlist', '').strip()
     shuffle = request.form.get('shuffle') == '1'
     runtime = load_runtime_state()
-    tags = load_tags()
-    tags.setdefault('tags', {})
-
     playlist = next((item for item in load_playlists() if item.get('name') == playlist_name), None)
-    if not uid:
-        runtime['message'] = 'tag uid required for playlist assignment'
-    elif not playlist:
+    queue_state = load_queue()
+    queue = queue_state.get('queue', [])
+    assigned_playlists = {
+        config.get('playlist', '')
+        for config in load_tags().get('tags', {}).values()
+        if config.get('action') == 'play_playlist' and config.get('playlist')
+    }
+
+    if not playlist:
         runtime['message'] = f'playlist {playlist_name} not found'
+    elif playlist_name in assigned_playlists:
+        runtime['message'] = f'{playlist_name} already assigned'
+    elif any(item.get('action') == 'play_playlist' and item.get('playlist') == playlist_name for item in queue):
+        runtime['message'] = f'{playlist_name} already in assignment queue'
     else:
-        tags['tags'][uid] = {
+        queue.append({
             'action': 'play_playlist',
             'playlist': playlist_name,
             'shuffle': shuffle,
-        }
-        save_tags(tags)
-        runtime['message'] = f'assigned {uid} -> playlist {playlist_name}'
+        })
+        queue_state['queue'] = queue
+        save_queue(queue_state)
+        runtime['message'] = f'assignment queued for playlist {playlist_name}'
     save_runtime_state(runtime)
 
     if request.headers.get('HX-Request') == 'true':
-        response = make_response(_render_playlists())
+        response = make_response(assignment_queue_partial())
         response.headers['HX-Trigger'] = json.dumps({
             'refresh-control-panel': True,
-            'refresh-tag-mappings': True,
+            'refresh-playlists': True,
         })
         return response
     return _redirect_to_index()
@@ -670,12 +688,22 @@ def library_archive():
 
 @app.post('/queue/remove')
 def queue_remove():
-    folder = request.form['folder']
+    action = request.form.get('action', 'play_folder').strip()
+    target = request.form.get('target', '').strip()
     queue_state = load_queue()
-    queue_state['queue'] = [item for item in queue_state.get('queue', []) if item.get('folder') != folder]
+    if action == 'play_playlist':
+        queue_state['queue'] = [
+            item for item in queue_state.get('queue', [])
+            if not (item.get('action') == 'play_playlist' and item.get('playlist') == target)
+        ]
+    else:
+        queue_state['queue'] = [
+            item for item in queue_state.get('queue', [])
+            if not (item.get('action', 'play_folder') == 'play_folder' and item.get('folder') == target)
+        ]
     save_queue(queue_state)
     runtime = load_runtime_state()
-    runtime['message'] = f'removed {folder} from queue'
+    runtime['message'] = f'removed {target} from queue'
     save_runtime_state(runtime)
     return redirect(url_for('index'))
 

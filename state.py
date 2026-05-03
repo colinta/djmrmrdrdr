@@ -26,7 +26,9 @@ class TagsState(TypedDict):
 
 class QueueItem(TypedDict):
     action: str
-    folder: str
+    folder: NotRequired[str]
+    playlist: NotRequired[str]
+    shuffle: NotRequired[bool]
 
 
 class QueueState(TypedDict):

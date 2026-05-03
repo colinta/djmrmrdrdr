@@ -3,10 +3,11 @@
   <ol class="queue-list">
     {% for item in queue %}
       <li>
-        <span class="queue-folder">{{ item.folder }}</span>
+        <span class="queue-folder">{% if item.action == 'play_playlist' %}playlist: {{ item.playlist }}{% else %}{{ item.folder }}{% endif %}</span>
         {% if loop.first %}<span class="next-tag">next</span>{% endif %}
         <form method="post" action="{{ url_for('queue_remove') }}">
-          <input type="hidden" name="folder" value="{{ item.folder }}">
+          <input type="hidden" name="action" value="{{ item.action }}">
+          <input type="hidden" name="target" value="{% if item.action == 'play_playlist' %}{{ item.playlist }}{% else %}{{ item.folder }}{% endif %}">
           <button class="btn danger" type="submit">remove</button>
         </form>
       </li>
